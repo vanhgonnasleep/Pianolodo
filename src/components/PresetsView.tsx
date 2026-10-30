@@ -17,23 +17,23 @@ export const PresetsView: React.FC<PresetsViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header Banner */}
-      <div className="p-6 md:p-8 rounded-2xl bg-[#111a24] border border-[#233547] relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#f59e0b]/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="p-6 md:p-8 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#D97706]/5 rounded-full blur-3xl pointer-events-none" />
         <div className="relative z-10 space-y-2 max-w-2xl">
           <div className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-[#2b2413] border border-[#4d3c19] flex items-center justify-center text-[#f59e0b]">
+            <span className="w-8 h-8 rounded-lg bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706]">
               <Sparkles className="w-4 h-4" />
             </span>
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#f59e0b]">
-              Iconic Harmonic Progressions • 8 Presets
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#D97706]">
+              Pianolodo Iconic Progressions • 8 Presets
             </span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-extrabold text-[#1C1917] tracking-tight">
             {lang === 'vi'
               ? 'Kho Vòng Hợp Âm Mẫu Bất Hủ (Iconic Progressions Library)'
               : 'Iconic Chord Progressions & Hit Song Library'}
           </h1>
-          <p className="text-xs md:text-sm text-[#8b9eb0] leading-relaxed">
+          <p className="text-xs md:text-sm text-[#78716C] leading-relaxed">
             {lang === 'vi'
               ? 'Bộ sưu tập 8 vòng hợp âm kinh điển kiến tạo nên các kiệt tác âm nhạc thế giới từ Canon của Pachelbel, Jazz Standards đến V-Pop, R&B và Anime J-Pop.'
               : 'Curated 8 timeless harmonic loops powering global masterpieces from Pachelbel’s Canon and Jazz standards to Billboard hits, Asian Pop, and Anime soundtracks.'}
@@ -51,25 +51,25 @@ export const PresetsView: React.FC<PresetsViewProps> = ({
           return (
             <div
               key={preset.id}
-              className={`p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between space-y-4 shadow-xl ${
+              className={`p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between space-y-4 shadow-sm ${
                 isSelected
-                  ? 'bg-[#152533] border-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/10'
-                  : 'bg-[#111a24] border-[#233547] hover:border-[#334d66]'
+                  ? 'bg-[#FEF3C7]/40 border-[#D97706] shadow-md shadow-[#D97706]/10'
+                  : 'bg-[#FFFFFF] border-[#E5DFD7] hover:border-[#D1C8BD]'
               }`}
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-[#162230] border border-[#233547] flex items-center justify-center text-[#f59e0b]">
+                    <span className="w-7 h-7 rounded-lg bg-[#FAF8F5] border border-[#E5DFD7] flex items-center justify-center text-[#D97706]">
                       <Music className="w-3.5 h-3.5" />
                     </span>
-                    <span className="text-xs font-mono font-bold text-[#8b9eb0]">
+                    <span className="text-xs font-mono font-bold text-[#78716C]">
                       Tone {preset.defaultKey}
                     </span>
                   </div>
 
                   {isSelected && (
-                    <span className="px-2 py-0.5 rounded-full bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/40 text-[10px] font-bold flex items-center gap-1">
+                    <span className="px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] text-[10px] font-bold flex items-center gap-1">
                       <Check className="w-3 h-3" />
                       {lang === 'vi' ? 'Đang chọn' : 'Active'}
                     </span>
@@ -77,21 +77,21 @@ export const PresetsView: React.FC<PresetsViewProps> = ({
                 </div>
 
                 <div>
-                  <h3 className="text-base font-bold text-white tracking-tight">
+                  <h3 className="text-base font-bold text-[#1C1917] tracking-tight">
                     {name}
                   </h3>
-                  <div className="mt-1 font-mono text-sm font-extrabold text-[#2dd4bf] bg-[#0a0f16] px-3 py-1.5 rounded-lg border border-[#1b2b3a] inline-block">
+                  <div className="mt-1 font-mono text-sm font-extrabold text-[#D97706] bg-[#FAF8F5] px-3 py-1.5 rounded-lg border border-[#E5DFD7] inline-block">
                     {preset.degreeInput}
                   </div>
                 </div>
 
-                <p className="text-xs text-[#8b9eb0] leading-relaxed line-clamp-3">
+                <p className="text-xs text-[#57534E] leading-relaxed line-clamp-3">
                   {desc}
                 </p>
               </div>
 
-              <div className="pt-3 border-t border-[#1b2b3a] flex items-center justify-between">
-                <span className="text-[11px] font-mono text-[#627a8f] uppercase">
+              <div className="pt-3 border-t border-[#F5F1EB] flex items-center justify-between">
+                <span className="text-[11px] font-mono text-[#A8A29E] uppercase">
                   Vibe: {preset.defaultVibe}
                 </span>
 
@@ -99,8 +99,8 @@ export const PresetsView: React.FC<PresetsViewProps> = ({
                   onClick={() => onSelectPreset(preset)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
                     isSelected
-                      ? 'bg-[#2dd4bf] text-[#042f2e] shadow-md'
-                      : 'bg-[#162230] hover:bg-[#1a2d3b] text-[#d0dee9] hover:text-white border border-[#233547]'
+                      ? 'bg-[#D97706] text-white shadow-xs'
+                      : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#1C1917] border border-[#E5DFD7]'
                   }`}
                 >
                   <span>{lang === 'vi' ? 'Nạp vào Studio' : 'Load into Studio'}</span>

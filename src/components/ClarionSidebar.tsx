@@ -67,22 +67,22 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-[#0d1620] border-r border-[#223547] flex flex-col justify-between p-5 select-none flex-shrink-0 z-30 shadow-2xl">
+    <aside className="w-64 bg-[#F7F4EE] border-r border-[#E5DFD7] flex flex-col justify-between p-5 select-none flex-shrink-0 z-30 shadow-sm">
       {/* Brand Header */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#173036] border border-[#264e55] flex items-center justify-center text-[#2dd4bf] shadow-lg shadow-[#2dd4bf]/10">
+          <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] shadow-sm">
             <AudioLines className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-extrabold tracking-tight text-white flex items-center gap-1.5">
-              <span>{lang === 'vi' ? 'Trợ Lý Hòa Thanh' : 'Piano Harmony'}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#2dd4bf]/20 text-[#2dd4bf] border border-[#2dd4bf]/30">
+            <div className="text-sm font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5">
+              <span>Pianolodo</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#D97706]/15 text-[#B45309] border border-[#D97706]/25 font-bold">
                 PRO
               </span>
             </div>
-            <div className="text-[11px] text-[#8b9eb0] font-mono">
-              CLARION CORE • v2.0
+            <div className="text-[11px] text-[#78716C] font-medium">
+              {lang === 'vi' ? 'Trợ Lý Hòa Thanh' : 'Warm Studio v2.0'}
             </div>
           </div>
         </div>
@@ -98,14 +98,14 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
                 onClick={() => onSelectTab(item.id)}
                 className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-left relative ${
                   isActive
-                    ? 'bg-[#1a2d3b] text-white border border-[#2e4c61] shadow-md shadow-[#0a1219]/40'
-                    : 'text-[#8b9eb0] hover:text-[#f0f6fc] hover:bg-[#13202c]'
+                    ? 'bg-[#FFFFFF] text-[#1C1917] border border-[#E5DFD7] shadow-sm'
+                    : 'text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1]'
                 }`}
               >
-                <Icon className={`w-4 h-4 ${isActive ? 'text-[#2dd4bf]' : 'text-[#627a8f]'}`} />
+                <Icon className={`w-4 h-4 ${isActive ? 'text-[#D97706]' : 'text-[#A8A29E]'}`} />
                 <span>{lang === 'vi' ? item.labelVi : item.labelEn}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#2dd4bf] ml-auto shadow-sm shadow-[#2dd4bf]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] ml-auto shadow-xs" />
                 )}
               </button>
             );
@@ -115,24 +115,24 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
 
       {/* Center Widget: Active Progression Status */}
       <div className="space-y-4 my-auto pt-6 pb-4">
-        <div className="p-3.5 rounded-2xl bg-[#121f2b] border border-[#223547] space-y-2">
-          <div className="flex items-center justify-between text-[11px] font-bold text-[#8b9eb0]">
-            <span className="flex items-center gap-1.5 text-white">
-              <Music className="w-3.5 h-3.5 text-[#f59e0b]" />
-              {lang === 'vi' ? 'Phiên làm việc hiện tại' : 'Active Progression'}
+        <div className="p-3.5 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] space-y-2 shadow-xs">
+          <div className="flex items-center justify-between text-[11px] font-bold text-[#78716C]">
+            <span className="flex items-center gap-1.5 text-[#1C1917]">
+              <Music className="w-3.5 h-3.5 text-[#D97706]" />
+              {lang === 'vi' ? 'Phiên làm việc' : 'Active Session'}
             </span>
-            <span className="font-mono text-[#f59e0b]">
+            <span className="font-mono text-[#D97706] font-bold">
               Tone {activeProgressionSummary.keyRoot}
             </span>
           </div>
 
-          <div className="text-xs font-mono font-bold text-white truncate bg-[#0d1620] px-2.5 py-1.5 rounded-lg border border-[#1b2b3a]">
+          <div className="text-xs font-mono font-bold text-[#1C1917] truncate bg-[#F7F4EE] px-2.5 py-1.5 rounded-lg border border-[#E5DFD7]">
             {activeProgressionSummary.rawInput}
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-[#8b9eb0] pt-1 border-t border-[#1b2b3a]">
+          <div className="flex items-center justify-between text-[10px] text-[#78716C] pt-1 border-t border-[#F5F1EB]">
             <span>{activeProgressionSummary.chordCount} {lang === 'vi' ? 'hợp âm' : 'chords'}</span>
-            <span className="text-[#2dd4bf] font-bold font-mono">
+            <span className="text-[#0284C7] font-bold font-mono">
               {lang === 'vi' ? 'Mượt' : 'Smooth'}: {activeProgressionSummary.avgSmoothness}%
             </span>
           </div>
@@ -140,28 +140,28 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
       </div>
 
       {/* Footer: Local Engine Status & Language Switcher */}
-      <div className="space-y-4 pt-4 border-t border-[#1b2b3a]">
+      <div className="space-y-4 pt-4 border-t border-[#E5DFD7]">
         {/* Status indicator */}
-        <div className="flex items-center gap-2 text-[11px] text-[#8b9eb0]">
-          <span className="w-2 h-2 rounded-full bg-[#2dd4bf] pulse-dot shadow-sm shadow-[#2dd4bf]" />
+        <div className="flex items-center gap-2 text-[11px] text-[#78716C]">
+          <span className="w-2 h-2 rounded-full bg-[#10B981] pulse-dot shadow-xs shadow-[#10B981]" />
           <div>
-            <div className="font-semibold text-[#d0dee9]">
-              {lang === 'vi' ? 'Lõi Nhạc Lý Offline Sẵn Sàng' : 'Local Deterministic Engine Online'}
+            <div className="font-semibold text-[#1C1917]">
+              {lang === 'vi' ? 'Lõi Nhạc Lý Sẵn Sàng' : 'Local Engine Online'}
             </div>
-            <div className="text-[10px] text-[#627a8f]">
-              {lang === 'vi' ? 'Độ trễ <5ms • 100% On-Device' : 'Zero-Egress • <5ms Latency'}
+            <div className="text-[10px] text-[#A8A29E]">
+              {lang === 'vi' ? 'Độ trễ <5ms • 100% Cục bộ' : 'Zero-Egress • <5ms Latency'}
             </div>
           </div>
         </div>
 
         {/* Language selector pill */}
-        <div className="flex items-center bg-[#0d1620] p-1 rounded-xl border border-[#223547] text-xs">
+        <div className="flex items-center bg-[#EDE8E1] p-1 rounded-xl border border-[#E5DFD7] text-xs">
           <button
             onClick={() => onToggleLang('vi')}
             className={`flex-1 py-1 px-2 rounded-lg font-bold text-center transition flex items-center justify-center gap-1.5 ${
               lang === 'vi'
-                ? 'bg-[#2dd4bf] text-[#042f2e] shadow'
-                : 'text-[#8b9eb0] hover:text-white'
+                ? 'bg-[#FFFFFF] text-[#1C1917] shadow-xs'
+                : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             <span>🇻🇳</span>
@@ -171,8 +171,8 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
             onClick={() => onToggleLang('en')}
             className={`flex-1 py-1 px-2 rounded-lg font-bold text-center transition flex items-center justify-center gap-1.5 ${
               lang === 'en'
-                ? 'bg-[#2dd4bf] text-[#042f2e] shadow'
-                : 'text-[#8b9eb0] hover:text-white'
+                ? 'bg-[#FFFFFF] text-[#1C1917] shadow-xs'
+                : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
             <Globe className="w-3 h-3" />

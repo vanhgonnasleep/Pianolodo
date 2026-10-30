@@ -26,7 +26,7 @@ import { CurriculumView } from './components/CurriculumView';
 import { PresetsView } from './components/PresetsView';
 import { FocusMusicView } from './components/FocusMusicView';
 import { MidiSettingsView } from './components/MidiSettingsView';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Command } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('vi');
@@ -37,13 +37,14 @@ export const App: React.FC = () => {
   const [spiceLevel, setSpiceLevel] = useState<SpiceLevel>(1);
   const [activeChordIndex, setActiveChordIndex] = useState<number>(0);
 
-  // Playback & Groove State
+  // Playback, Groove & Loop State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [playingMode, setPlayingMode] = useState<'original' | 'reharmonized' | null>(null);
   const [groove, setGroove] = useState<GroovePatternId>('ballad-arpeggio');
   const [bpm, setBpm] = useState<number>(85);
   const [instrumentTone, setInstrumentTone] = useState<InstrumentToneType>('grand-piano');
+  const [isLooping, setIsLooping] = useState<boolean>(false);
 
   // Modals
   const [isCurriculumDrawerOpen, setIsCurriculumDrawerOpen] = useState<boolean>(false);
@@ -146,9 +147,10 @@ export const App: React.FC = () => {
         setIsPlaying(false);
         setPlayingIndex(null);
         setPlayingMode(null);
-      }
+      },
+      isLooping
     );
-  }, [progressionState.originalChords, groove, bpm]);
+  }, [progressionState.originalChords, groove, bpm, isLooping]);
 
   const handlePlayReharmonized = useCallback(() => {
     if (progressionState.reharmonizedChords.length === 0) return;
@@ -167,9 +169,10 @@ export const App: React.FC = () => {
         setIsPlaying(false);
         setPlayingIndex(null);
         setPlayingMode(null);
-      }
+      },
+      isLooping
     );
-  }, [progressionState.reharmonizedChords, groove, bpm]);
+  }, [progressionState.reharmonizedChords, groove, bpm, isLooping]);
 
   const handleStop = useCallback(() => {
     pianoAudioEngine.stopPlayback();
@@ -191,6 +194,47 @@ export const App: React.FC = () => {
     setCustomState(updated);
   };
 
+  // Keyboard Shortcuts (Space: Play/Stop, ArrowLeft/Right: Step chords)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (isPlaying) {
+          handleStop();
+        } else {
+          handlePlayReharmonized();
+        }
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        setActiveChordIndex((prev) => {
+          const next = Math.max(0, prev - 1);
+          const ch = progressionState.reharmonizedChords[next];
+          if (ch) pianoAudioEngine.playVoicedChord(ch, 'block');
+          return next;
+        });
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        setActiveChordIndex((prev) => {
+          const next = Math.min(progressionState.reharmonizedChords.length - 1, prev + 1);
+          const ch = progressionState.reharmonizedChords[next];
+          if (ch) pianoAudioEngine.playVoicedChord(ch, 'block');
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPlaying, handleStop, handlePlayReharmonized, progressionState.reharmonizedChords]);
+
   const activeChord = progressionState.reharmonizedChords[activeChordIndex] || null;
   const progressionChordsStr = progressionState.reharmonizedChords.map((c) => c.symbol).join(' - ');
 
@@ -207,7 +251,7 @@ export const App: React.FC = () => {
   const vibeName = lang === 'vi' ? currentVibeProfile.nameVi : currentVibeProfile.nameEn;
 
   return (
-    <div className="min-h-screen bg-[#0a0f16] text-[#f0f6fc] flex font-sans selection:bg-[#2dd4bf] selection:text-[#042f2e]">
+    <div className="min-h-screen bg-[#FAF8F5] text-[#1C1917] flex font-sans selection:bg-[#FDE68A] selection:text-[#78350F]">
       {/* 1. Left Clarion Docked Sidebar */}
       <ClarionSidebar
         currentTab={activeTab}
@@ -239,6 +283,8 @@ export const App: React.FC = () => {
           onGrooveChange={setGroove}
           bpm={bpm}
           onBpmChange={setBpm}
+          isLooping={isLooping}
+          onToggleLoop={() => setIsLooping((prev) => !prev)}
           lang={lang}
         />
 
@@ -247,13 +293,13 @@ export const App: React.FC = () => {
           {/* TAB 1: STUDIO */}
           {activeTab === 'studio' && (
             <div className="space-y-6">
-              {/* Clarion Executive Hero Banner (Overview Start) */}
-              <div className="p-6 md:p-8 rounded-2xl bg-[#111a24] border border-[#233547] relative overflow-hidden shadow-2xl">
+              {/* Executive Hero Banner (Overview Start) */}
+              <div className="p-6 md:p-8 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] relative overflow-hidden shadow-sm">
                 <div className="flex items-center justify-between gap-6">
                   <div className="space-y-2 relative pl-14">
                     {/* Audio wave marks */}
                     <span
-                      className="absolute left-0 top-1 h-12 flex items-center gap-1 text-[#2dd4bf]"
+                      className="absolute left-0 top-1 h-12 flex items-center gap-1 text-[#D97706]"
                       aria-hidden="true"
                     >
                       <i className="w-1 bg-current rounded-full wave-bar-1 block" />
@@ -262,58 +308,64 @@ export const App: React.FC = () => {
                       <i className="w-1 bg-current rounded-full wave-bar-4 block" />
                     </span>
 
-                    <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight">
+                    <h2 className="text-xl md:text-2xl font-extrabold text-[#1C1917] tracking-tight">
                       {lang === 'vi'
-                        ? 'Trợ Lý Hòa Thanh Piano AI & Voicing Studio'
-                        : 'Piano Harmony AI & Voicing Studio'}
+                        ? 'Pianolodo • Trợ Lý Hòa Thanh Piano AI & Voicing Studio'
+                        : 'Pianolodo • Piano Harmony AI & Voicing Studio'}
                     </h2>
-                    <p className="text-xs md:text-sm text-[#8b9eb0] max-w-2xl leading-relaxed">
+                    <p className="text-xs md:text-sm text-[#78716C] max-w-2xl leading-relaxed">
                       {lang === 'vi'
                         ? 'Lõi giải thuật Voice-Leading thông minh, tách tay trái/phải công thái học, hợp âm bắc cầu và nhạc nền tập trung chuyên sâu.'
                         : 'Deterministic voice-leading solver, ergonomic split-hand voicings, passing bridge chords, and zero-vocal deep focus soundscapes.'}
                     </p>
                   </div>
 
-                  <div className="hidden lg:flex items-center gap-2 bg-[#0a0f16] px-3.5 py-2 rounded-xl border border-[#233547] text-xs font-mono text-[#2dd4bf]">
-                    <ShieldCheck className="w-4 h-4 text-[#2dd4bf]" />
-                    <span>100% On-Device • Zero Latency</span>
+                  <div className="hidden lg:flex flex-col items-end gap-1.5">
+                    <div className="flex items-center gap-2 bg-[#FAF8F5] px-3.5 py-1.5 rounded-xl border border-[#E5DFD7] text-xs font-mono text-[#065F46] font-semibold">
+                      <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                      <span>100% On-Device • Zero Latency</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#A8A29E] font-medium">
+                      <Command className="w-3.5 h-3.5" />
+                      <span>{t('shortcutsHint', lang)}</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* 4 Executive Metric Tiles */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#1b2b3a]">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#F5F1EB]">
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#8b9eb0] uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
                       {lang === 'vi' ? 'Số Hợp Âm' : 'Chords Count'}
                     </span>
-                    <div className="text-2xl font-extrabold font-mono text-white">
+                    <div className="text-2xl font-extrabold font-mono text-[#1C1917]">
                       {progressionState.reharmonizedChords.length}
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#8b9eb0] uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
                       {lang === 'vi' ? 'Độ Mượt Giọng' : 'Smoothness Score'}
                     </span>
-                    <div className="text-2xl font-extrabold font-mono text-[#2dd4bf]">
+                    <div className="text-2xl font-extrabold font-mono text-[#10B981]">
                       {avgSmoothness}%
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#8b9eb0] uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
                       {lang === 'vi' ? 'Giọng Chủ' : 'Key Root'}
                     </span>
-                    <div className="text-2xl font-extrabold font-mono text-[#f59e0b]">
+                    <div className="text-2xl font-extrabold font-mono text-[#D97706]">
                       Tone {keyRoot}
                     </div>
                   </div>
 
                   <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#8b9eb0] uppercase tracking-wider">
+                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
                       {lang === 'vi' ? 'Phong Cách' : 'Active Vibe'}
                     </span>
-                    <div className="text-base font-extrabold text-white truncate">
+                    <div className="text-base font-extrabold text-[#1C1917] truncate">
                       {vibeName}
                     </div>
                   </div>
@@ -431,12 +483,12 @@ export const App: React.FC = () => {
         />
 
         {/* Executive Footer */}
-        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#1b2b3a] bg-[#0d1620] text-xs text-[#8b9eb0] flex flex-wrap items-center justify-between gap-4">
+        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#E5DFD7] bg-[#F7F4EE] text-xs text-[#78716C] flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#2dd4bf] pulse-dot" />
+            <span className="w-2 h-2 rounded-full bg-[#10B981] pulse-dot" />
             <span>{t('footerLeft', lang)}</span>
           </div>
-          <div className="text-[11px] text-[#627a8f] font-mono">
+          <div className="text-[11px] text-[#A8A29E] font-mono">
             {t('footerRight', lang)}
           </div>
         </footer>

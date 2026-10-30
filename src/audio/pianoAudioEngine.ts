@@ -114,7 +114,8 @@ class PianoAudioEngine {
     groove: GroovePatternId,
     bpm: number,
     onChordStep: (index: number) => void,
-    onComplete: () => void
+    onComplete: () => void,
+    loop: boolean = false
   ): Promise<void> {
     await this.ensureAudioContext();
     this.stopPlayback();
@@ -175,8 +176,12 @@ class PianoAudioEngine {
 
     setTimeout(() => {
       if (this.activeSequenceId === sequenceId) {
-        this.activeSequenceId = null;
-        onComplete();
+        if (loop) {
+          this.playProgression(chords, groove, bpm, onChordStep, onComplete, true);
+        } else {
+          this.activeSequenceId = null;
+          onComplete();
+        }
       }
     }, accumulatedTime * 1000);
   }

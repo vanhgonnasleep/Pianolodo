@@ -47,23 +47,23 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
       : CURRICULUM_RULES.filter((r) => r.category === selectedCategory);
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
+    <div className="space-y-4">
       {/* Active Chord Explanation Section */}
       {activeChord && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl p-5 md:p-6 shadow-sm space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F5F1EB] pb-3">
             <div className="flex items-center gap-2">
-              <span className="text-xl font-extrabold text-white">{activeChord.symbol}</span>
-              <span className="text-sm font-mono font-bold text-amber-400">
+              <span className="text-xl font-extrabold text-[#1C1917]">{activeChord.symbol}</span>
+              <span className="text-sm font-mono font-bold text-[#D97706]">
                 ({activeChord.romanDegree})
               </span>
-              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FAF8F5] text-[#57534E] border border-[#E5DFD7]">
                 {lang === 'vi' ? activeChord.explanation.title : activeChord.explanation.titleEn || activeChord.explanation.title}
               </span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-xs text-rose-300 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
-              <Heart className="w-3.5 h-3.5 fill-current" />
+            <div className="flex items-center gap-1.5 text-xs text-rose-700 bg-rose-50 px-3 py-1 rounded-full border border-rose-200">
+              <Heart className="w-3.5 h-3.5 fill-current text-rose-500" />
               <span>
                 {t('emotionTag', lang)}{' '}
                 {lang === 'vi'
@@ -75,12 +75,12 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Why Smooth */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
-                <Lightbulb className="w-4 h-4 text-amber-400" />
-                {t('whySmooth', lang)}
+            <div className="bg-[#FAF8F5] p-4 rounded-xl border border-amber-200/80 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#D97706] uppercase tracking-wider">
+                <Lightbulb className="w-4 h-4 text-[#D97706]" />
+                <span>{t('whySmooth', lang)}</span>
               </div>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs md:text-sm text-[#44403C] leading-relaxed">
                 {lang === 'vi'
                   ? activeChord.explanation.whySmooth
                   : activeChord.explanation.whySmoothEn || activeChord.explanation.whySmooth}
@@ -88,12 +88,12 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
             </div>
 
             {/* Finger Tip */}
-            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
-                <Hand className="w-4 h-4 text-blue-400" />
-                {t('fingerTip', lang)}
+            <div className="bg-[#FAF8F5] p-4 rounded-xl border border-blue-200/80 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-[#2563EB] uppercase tracking-wider">
+                <Hand className="w-4 h-4 text-[#2563EB]" />
+                <span>{t('fingerTip', lang)}</span>
               </div>
-              <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs md:text-sm text-[#44403C] leading-relaxed">
                 {lang === 'vi'
                   ? activeChord.explanation.fingerTip
                   : activeChord.explanation.fingerTipEn || activeChord.explanation.fingerTip}
@@ -105,35 +105,35 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
 
       {/* Curriculum Modal Drawer */}
       {isCurriculumOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-3xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-slate-800 flex items-center justify-between">
+            <div className="p-5 border-b border-[#F5F1EB] flex items-center justify-between">
               <div>
-                <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-amber-400" />
+                <h2 className="text-lg md:text-xl font-bold text-[#1C1917] flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-[#D97706]" />
                   {t('curriculumModalTitle', lang)}
                 </h2>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-[#78716C]">
                   {t('curriculumModalDesc', lang)}
                 </p>
               </div>
               <button
                 onClick={onCloseCurriculum}
-                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                className="p-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#78716C] hover:text-[#1C1917] transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Category Filter Pills */}
-            <div className="p-4 border-b border-slate-800 bg-slate-950/50 flex items-center gap-2 overflow-x-auto scrollbar-thin">
+            <div className="p-4 border-b border-[#F5F1EB] bg-[#FAF8F5] flex items-center gap-2 overflow-x-auto scrollbar-thin">
               <button
                 onClick={() => setSelectedCategory('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                   selectedCategory === 'all'
-                    ? 'bg-amber-500 text-slate-950'
-                    : 'bg-slate-800 text-slate-400 hover:text-white'
+                    ? 'bg-[#D97706] text-white'
+                    : 'bg-[#FFFFFF] text-[#78716C] hover:text-[#1C1917] border border-[#E5DFD7]'
                 }`}
               >
                 {t('filterAll', lang)}
@@ -144,8 +144,8 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
                     selectedCategory === cat
-                      ? 'bg-amber-500 text-slate-950'
-                      : 'bg-slate-800 text-slate-400 hover:text-white'
+                      ? 'bg-[#D97706] text-white'
+                      : 'bg-[#FFFFFF] text-[#78716C] hover:text-[#1C1917] border border-[#E5DFD7]'
                   }`}
                 >
                   {label}
@@ -159,32 +159,32 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                 {filteredRules.map((rule: CurriculumRule) => (
                   <div
                     key={rule.id}
-                    className="bg-slate-950 border border-slate-800 hover:border-amber-500/40 p-4 rounded-2xl space-y-3 transition group"
+                    className="bg-[#FAF8F5] border border-[#E5DFD7] hover:border-[#D97706] p-4 rounded-2xl space-y-3 transition group shadow-xs"
                   >
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                         {categoryLabels[rule.category]}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-mono">
+                      <span className="text-[10px] text-[#A8A29E] font-mono">
                         {rule.sourceBook}
                       </span>
                     </div>
 
-                    <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition">
+                    <h4 className="text-sm font-bold text-[#1C1917] group-hover:text-[#D97706] transition">
                       {lang === 'vi' ? rule.titleVi : rule.titleEn}
                     </h4>
 
                     {/* Formula box */}
-                    <div className="bg-slate-900 px-3 py-2 rounded-xl text-xs font-mono text-amber-300 border border-slate-800">
+                    <div className="bg-[#FFFFFF] px-3 py-2 rounded-xl text-xs font-mono text-[#D97706] font-semibold border border-[#E5DFD7]">
                       {rule.formulaSummary}
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <p className="text-xs text-[#57534E] leading-relaxed">
                       {lang === 'vi' ? rule.whySmoothVi : rule.whySmoothEn}
                     </p>
 
-                    <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-xs">
-                      <span className="text-slate-400 text-[11px] italic">
+                    <div className="pt-2 border-t border-[#E5DFD7] flex items-center justify-between text-xs">
+                      <span className="text-[#78716C] text-[11px] italic">
                         {lang === 'vi' ? 'Ví dụ' : 'Example'}: {rule.exampleInC.before} &rarr; {rule.exampleInC.after}
                       </span>
                       {onSelectProgressionFormula && (
@@ -193,9 +193,9 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                             onSelectProgressionFormula(rule.exampleInC.after);
                             onCloseCurriculum();
                           }}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition"
+                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FFFFFF] hover:bg-[#D97706] hover:text-white text-[#1C1917] text-xs font-semibold border border-[#E5DFD7] transition shadow-xs"
                         >
-                          <Sparkles className="w-3 h-3" />
+                          <Sparkles className="w-3 h-3 text-[#D97706] group-hover:text-white" />
                           {t('tryNow', lang)}
                         </button>
                       )}

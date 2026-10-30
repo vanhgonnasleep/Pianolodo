@@ -2,7 +2,7 @@ import { Language } from '../types/harmony';
 
 export const I18N_DICTIONARY = {
   vi: {
-    appTitle: 'Trợ Lý Hòa Thanh & Hợp Âm Màu Piano',
+    appTitle: 'Pianolodo • Trợ Lý Hòa Thanh & Hợp Âm Màu Piano',
     appSubtitle: 'Nâng cấp hợp âm màu • Tự động xếp ngón tay mượt mà (Smooth Voice-Leading) • 100% Offline',
     badgeStage1: 'Chặng 1 • TDD Verified',
     grandPiano: 'Grand Piano',
@@ -60,7 +60,7 @@ export const I18N_DICTIONARY = {
     curriculumModalDesc: 'Đúc kết từ Berklee Contemporary Harmony & Mark Levine Jazz Piano Book',
     filterAll: 'Tất cả (12 chiêu)',
     tryNow: 'Thử ngay',
-    footerLeft: 'Piano Harmony Coach © 2026 • Lõi nhạc lý tất định 100% Offline • Zero-Latency',
+    footerLeft: 'Pianolodo © 2026 • Lõi nhạc lý tất định 100% Offline • Zero-Latency',
     footerRight: 'Chặng 1 Hoàn Thành • Sẵn sàng cho Chặng 2 (Cảm Âm & Mò Nốt Giai Điệu)',
     focusModalTitle: 'Focus Music Architect — Trình Tạo Không Gian Tập Trung Sâu',
     focusModalDesc: 'Khoa học thần kinh âm thanh (Neuroacoustics) & Trình tạo Prompt AI sinh nhạc không lời (Zero-Vocal Guard)',
@@ -71,9 +71,13 @@ export const I18N_DICTIONARY = {
     droneVolume: 'Âm lượng đệm Drone trầm (Key Root Anchor):',
     copyPromptBtn: 'Sao chép Prompt sinh nhạc AI (Suno / Udio)',
     copiedBtn: 'Đã sao chép vào bộ nhớ tạm!',
+    loopMode: 'Lặp lại (Loop)',
+    copyVoicingBtn: 'Sao Chép Dàn Nốt 2 Tay',
+    copiedVoicingToast: 'Đã sao chép dàn nốt vào Clipboard!',
+    shortcutsHint: 'Phím tắt: Space (Phát/Dừng), Phím ← → (Đổi hợp âm)',
   },
   en: {
-    appTitle: 'Piano Harmony Coach & Color Chords',
+    appTitle: 'Pianolodo • Piano Harmony Coach & Color Voicings',
     appSubtitle: 'Color chord upgrades • Deterministic smooth voice-leading solver • 100% Offline',
     badgeStage1: 'Stage 1 • TDD Verified',
     grandPiano: 'Grand Piano',
@@ -131,7 +135,7 @@ export const I18N_DICTIONARY = {
     curriculumModalDesc: 'Distilled from Berklee Contemporary Harmony & Mark Levine Jazz Piano Book',
     filterAll: 'All (12 Rules)',
     tryNow: 'Try Now',
-    footerLeft: 'Piano Harmony Coach © 2026 • Deterministic Theory Engine • 100% Offline',
+    footerLeft: 'Pianolodo © 2026 • Deterministic Theory Engine • 100% Offline',
     footerRight: 'Stage 1 Complete • Ready for Stage 2 (Ear Training & Melody Finder)',
     focusModalTitle: 'Focus Music Architect — Neuroacoustic Flow & Soundscape',
     focusModalDesc: 'Cognitive acoustic science & Production-grade AI instrumental prompts with Zero-Vocal Guard',
@@ -142,6 +146,10 @@ export const I18N_DICTIONARY = {
     droneVolume: 'Key Root Drone Pad Volume (Harmonic Anchor):',
     copyPromptBtn: 'Copy AI Music Prompt (Suno / Udio / Stable Audio)',
     copiedBtn: 'Copied to clipboard!',
+    loopMode: 'Loop Mode',
+    copyVoicingBtn: 'Copy Voicing Details',
+    copiedVoicingToast: 'Voicing copied to clipboard!',
+    shortcutsHint: 'Shortcuts: Space (Play/Stop), Arrows ← → (Step Chords)',
   },
 };
 

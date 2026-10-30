@@ -103,28 +103,28 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
   const blackKeyHeight = 84;
 
   return (
-    <div className="bg-slate-950 p-4 border-b border-slate-800 space-y-3">
+    <div className="bg-[#FFFFFF] p-4 md:p-6 border border-[#E5DFD7] rounded-2xl shadow-sm space-y-3">
       {/* Legend & Active Voicing Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">
-          <span className="font-bold text-slate-300">{t('pianoTitle', lang)}</span>
+          <span className="font-bold text-[#1C1917]">{t('pianoTitle', lang)}</span>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-semibold text-blue-400">
-              <span className="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm shadow-blue-500/50" />
+            <span className="flex items-center gap-1.5 font-semibold text-[#2563EB]">
+              <span className="w-3 h-3 rounded-full bg-[#2563EB] inline-block shadow-xs" />
               {t('leftHand', lang)}
             </span>
-            <span className="flex items-center gap-1.5 font-semibold text-amber-400">
-              <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-sm shadow-amber-500/50" />
+            <span className="flex items-center gap-1.5 font-semibold text-[#D97706]">
+              <span className="w-3 h-3 rounded-full bg-[#D97706] inline-block shadow-xs" />
               {t('rightHand', lang)}
             </span>
-            <span className="flex items-center gap-1.5 text-slate-400">
-              <Lock className="w-3.5 h-3.5 text-amber-300" />
+            <span className="flex items-center gap-1.5 text-[#78716C]">
+              <Lock className="w-3.5 h-3.5 text-[#D97706]" />
               {t('keptNotesLegend', lang)}
             </span>
           </div>
         </div>
 
-        <div className="text-slate-400 text-[11px] font-mono">
+        <div className="text-[#78716C] text-[11px] font-mono">
           {t('fingerZone', lang)}
         </div>
       </div>
@@ -132,7 +132,7 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
       {/* Piano Scrollable Viewport */}
       <div
         ref={containerRef}
-        className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-900/60 p-3 shadow-inner scrollbar-thin"
+        className="overflow-x-auto rounded-xl border border-[#E5DFD7] bg-[#FAF8F5] p-3 shadow-inner scrollbar-thin"
       >
         <div
           className="relative select-none mx-auto"
@@ -145,9 +145,9 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
             const isKept = keptMidis.has(k.midi);
             const moved = movedMap.get(k.midi);
 
-            let bgClass = 'bg-white hover:bg-slate-100 text-slate-800';
-            if (isLH) bgClass = 'bg-blue-500 text-white shadow-lg shadow-blue-500/30';
-            if (isRH) bgClass = 'bg-amber-500 text-slate-950 font-bold shadow-lg shadow-amber-500/30';
+            let bgClass = 'bg-[#FEFDFB] hover:bg-[#F5F1EB] text-[#44403C] border-[#D6D0C7]';
+            if (isLH) bgClass = 'bg-[#2563EB] text-white font-bold shadow-md shadow-[#2563EB]/25 border-[#1D4ED8]';
+            if (isRH) bgClass = 'bg-[#D97706] text-white font-bold shadow-md shadow-[#D97706]/25 border-[#B45309]';
 
             return (
               <div
@@ -158,15 +158,15 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
                   width: `${whiteKeyWidth}px`,
                   height: `${whiteKeyHeight}px`,
                 }}
-                className={`absolute top-0 rounded-b-md border-r border-b border-l border-slate-400/80 cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 ${bgClass}`}
+                className={`absolute top-0 rounded-b-md border-r border-b border-l cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 ${bgClass}`}
               >
                 {isKept && (
-                  <div className="absolute top-1 bg-amber-400/90 text-slate-950 text-[9px] rounded-full p-0.5 shadow">
+                  <div className="absolute top-1 bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] text-[9px] rounded-full p-0.5 shadow-xs">
                     <Lock className="w-2.5 h-2.5" />
                   </div>
                 )}
                 {moved !== undefined && (
-                  <div className="absolute top-1 bg-slate-900 text-amber-300 font-mono text-[9px] font-bold px-1 rounded shadow">
+                  <div className="absolute top-1 bg-[#1C1917] text-[#FDE68A] font-mono text-[9px] font-bold px-1 rounded shadow-xs">
                     {moved > 0 ? `+${moved}` : moved}
                   </div>
                 )}
@@ -191,9 +191,9 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
 
             const leftPos = (prevWhite.whiteIndex + 1) * whiteKeyWidth - blackKeyWidth / 2;
 
-            let bgClass = 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-950';
-            if (isLH) bgClass = 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-500/40';
-            if (isRH) bgClass = 'bg-amber-400 text-slate-950 font-bold border-amber-300 shadow-md shadow-amber-500/40';
+            let bgClass = 'bg-[#1C1917] hover:bg-[#292524] text-[#E7E5E4] border-[#0C0A09]';
+            if (isLH) bgClass = 'bg-[#1D4ED8] text-white border-[#2563EB] shadow-md';
+            if (isRH) bgClass = 'bg-[#B45309] text-white border-[#D97706] shadow-md';
 
             return (
               <div
@@ -207,12 +207,12 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, l
                 className={`absolute top-0 z-10 rounded-b border cursor-pointer flex flex-col justify-end items-center pb-1.5 transition duration-75 shadow-md ${bgClass}`}
               >
                 {isKept && (
-                  <div className="absolute top-0.5 bg-amber-400 text-slate-950 text-[8px] rounded-full p-0.5">
+                  <div className="absolute top-0.5 bg-[#FEF3C7] text-[#B45309] text-[8px] rounded-full p-0.5">
                     <Lock className="w-2 h-2" />
                   </div>
                 )}
                 {moved !== undefined && (
-                  <div className="absolute top-0.5 bg-slate-950 text-amber-300 font-mono text-[8px] font-bold px-0.5 rounded">
+                  <div className="absolute top-0.5 bg-[#1C1917] text-[#FDE68A] font-mono text-[8px] font-bold px-0.5 rounded">
                     {moved > 0 ? `+${moved}` : moved}
                   </div>
                 )}
