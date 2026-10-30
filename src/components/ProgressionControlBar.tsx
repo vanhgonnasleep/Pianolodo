@@ -5,6 +5,7 @@ import { Language, PresetProgression, SpiceLevel, VibeId } from '../types/harmon
 import { VIBE_PROFILES } from '../data/curriculum';
 import { t } from '../i18n/translations';
 import { BookOpen, Headphones, Sparkles, Volume2, Globe, Music2 } from 'lucide-react';
+import { ChordCadenceWorkbench } from './ChordCadenceWorkbench';
 
 const ALL_KEYS = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
@@ -192,6 +193,14 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 2.5 Row: Interactive Chord List & Apply 2-5-1 Cadences to Input */}
+      <ChordCadenceWorkbench
+        rawInput={rawInput}
+        onInputChange={onInputChange}
+        keyRoot={keyRoot}
+        lang={lang}
+      />
 
       {/* Third row: 8 One-Click Presets */}
       <div className="flex flex-col gap-1.5">

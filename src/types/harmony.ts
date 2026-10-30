@@ -163,3 +163,27 @@ export interface ProgressionOption {
   emotionTagEn: string;
   progressionState: ProgressionState;
 }
+
+export type CadenceCategory =
+  | 'target-251'
+  | 'tritone-sub'
+  | 'backdoor'
+  | 'diminished'
+  | 'turnaround'
+  | 'ballad';
+
+export interface CadenceOption {
+  id: string;
+  titleVi: string;
+  titleEn: string;
+  badgeVi: string;
+  badgeEn: string;
+  category: CadenceCategory;
+  insertedFormula: string;
+  resultingFormula: string;
+  targetChordSymbol: string;
+  rationaleVi: string;
+  rationaleEn: string;
+  actionType: 'insert-before' | 'replace-target' | 'append' | 'replace-all';
+  previewChords: VoicedChord[];
+}

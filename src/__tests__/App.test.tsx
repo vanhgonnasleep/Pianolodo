@@ -63,4 +63,24 @@ describe('Piano Harmony Coach UI Integration', () => {
     expect(applyBtns.length).toBeGreaterThanOrEqual(1);
     fireEvent.click(applyBtns[0]);
   });
+
+  it('renders ChordCadenceWorkbench, shows chord tokens, and applies a 2-5-1 cadence with undo support', () => {
+    render(<App />);
+    expect(screen.getByText(/Liệt Kê Hợp Âm & Áp Dụng 2-5-1/i)).toBeTruthy();
+    expect(screen.getByText(/1\. Danh sách hợp âm trong Input/i)).toBeTruthy();
+
+    // Find apply cadence buttons in workbench
+    const cadenceApplyBtns = screen.getAllByRole('button', { name: /Chèn trước|Thay thế|Nối vào cuối|Áp dụng toàn bộ/i });
+    expect(cadenceApplyBtns.length).toBeGreaterThanOrEqual(1);
+
+    // Apply the first cadence option
+    fireEvent.click(cadenceApplyBtns[0]);
+
+    // Expect Undo button to appear
+    const undoBtn = screen.getByRole('button', { name: /Hoàn tác/i });
+    expect(undoBtn).toBeTruthy();
+
+    // Click Undo
+    fireEvent.click(undoBtn);
+  });
 });
