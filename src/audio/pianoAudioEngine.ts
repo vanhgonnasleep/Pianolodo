@@ -59,6 +59,12 @@ class PianoAudioEngine {
     this.currentInstrument = toneType;
   }
 
+  public async playNote(note: string, duration: string = '4n'): Promise<void> {
+    await this.ensureAudioContext();
+    const synth = this.getActiveSynth();
+    synth.triggerAttackRelease(note, duration, Tone.now());
+  }
+
   private getActiveSynth(): Tone.PolySynth {
     if (!this.synth || !this.rhodesSynth) {
       this.initSynths();

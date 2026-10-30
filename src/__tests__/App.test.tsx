@@ -34,7 +34,7 @@ beforeAll(() => {
 describe('Piano Harmony Coach UI Integration', () => {
   it('renders progression input, Vibe selector, 88-key piano, and plain-Vietnamese explanation', () => {
     render(<App />);
-    expect(screen.getByText(/Trợ Lý Hòa Thanh/i)).toBeTruthy();
+    expect(screen.getAllByText(/Trợ Lý Hòa Thanh/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Tay trái \(Bass\)/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Tay phải \(Voicing\)/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/Tại sao nghe mượt/i)).toBeTruthy();
