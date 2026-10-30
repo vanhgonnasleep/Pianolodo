@@ -1,6 +1,6 @@
 # Stage 1: Piano Harmony, Color Chords & Smooth Voice-Leading Coach — Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Build a 100% offline-capable, zero-latency interactive Web App that takes any basic chord progression (by scale degree like `2-5-1` or chord names like `C - Am - Dm - G`), reharmonizes it with smooth color chords and passing bridges according to user-selected musical Vibes, solves optimal two-hand piano voice-leading, renders an 88-key split-hand piano + Grand Staff notation + plain-Vietnamese explanations, and plays A/B audio comparisons with realistic piano grooves.
 
@@ -94,7 +94,7 @@ Piano-Harmony-Coach/
   - `src/data/curriculum.ts`: `CURRICULUM_RULES: CurriculumRule[]`, `VIBE_PROFILES: Record<VibeId, VibeProfile>`, `getRuleById(id: string): CurriculumRule`
   - `src/data/presetProgressions.ts`: `PRESET_PROGRESSIONS: PresetProgression[]`
 
-- [ ] **Step 1: Initialize Vite + React + TypeScript + Vitest configuration files and write the failing test `src/__tests__/curriculum.test.ts`**
+- [x] **Step 1: Initialize Vite + React + TypeScript + Vitest configuration files and write the failing test `src/__tests__/curriculum.test.ts`**
 
 Create `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, and write `src/__tests__/curriculum.test.ts`:
 
@@ -140,12 +140,12 @@ describe('Curated Piano Curriculum & Preset Progressions', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/__tests__/curriculum.test.ts`
 Expected: FAIL with `Cannot find module '../data/curriculum'`
 
-- [ ] **Step 3: Implement `src/types/harmony.ts`, `src/data/curriculum.ts`, and `src/data/presetProgressions.ts`**
+- [x] **Step 3: Implement `src/types/harmony.ts`, `src/data/curriculum.ts`, and `src/data/presetProgressions.ts`**
 
 ```typescript
 // src/types/harmony.ts
@@ -268,12 +268,12 @@ export interface ProgressionState {
 
 Implement `src/data/curriculum.ts` with the 4 `VIBE_PROFILES` and 12 comprehensive `CURRICULUM_RULES` (covering `ext-maj9`, `ext-min9`, `ext-dom13sus4`, `slash-walkdown-i-vi`, `slash-walkdown-vi-iv`, `sec-dom-v-of-vi`, `sec-dom-v-of-ii`, `sec-dom-ii-v-of-iv`, `dim-passing-sharp-i`, `dim-passing-sharp-iv`, `tritone-sub-bii7`, `modal-iv-minor6`), and implement `src/data/presetProgressions.ts` with the 8 iconic progressions (`2 - 5 - 1`, `2 - 6 - 5 - 1`, `1 - 6 - 2 - 5`, `4 - 5 - 3 - 6`, `1 - 5 - 6 - 3 - 4 - 1 - 2 - 5`, `4 - 3 - 6`, `1 - 6 - 4 - 5`, `6 - 4 - 1 - 5`).
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/__tests__/curriculum.test.ts`
 Expected: PASS (3 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add package.json tsconfig.json vite.config.ts index.html src/types/harmony.ts src/data/curriculum.ts src/data/presetProgressions.ts src/__tests__/curriculum.test.ts
@@ -295,7 +295,7 @@ git commit -m "feat(data): scaffold project and add curated piano harmony curric
   - `transposeKeyRoot(keyRoot: string, semitones: number): string`
   - `spellNoteInKey(midiOrNote: number | string, keyRoot: string): string`
 
-- [ ] **Step 1: Write the failing test `src/__tests__/progressionParser.test.ts`**
+- [x] **Step 1: Write the failing test `src/__tests__/progressionParser.test.ts`**
 
 Include tests for degree mode (`2 - 5 - 1`, `2-6-5-1`), chord symbol mode with automatic key detection (`C - Am - Dm - G`), non-diatonic/borrowed chord resilience (`C - E7 - Am - Fm` still detects key `C`), and flat-key enharmonic spelling (`F`, `Bb`, `Eb` use `Bb`/`Eb` instead of `A#`/`D#`):
 
@@ -341,21 +341,21 @@ describe('Progression Parser & Key Detector', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/__tests__/progressionParser.test.ts`
 Expected: FAIL with `Cannot find module '../engine/progressionParser'`
 
-- [ ] **Step 3: Implement `src/engine/progressionParser.ts`**
+- [x] **Step 3: Implement `src/engine/progressionParser.ts`**
 
 Implement deterministic degree parsing (`1..7` and Roman numerals `I..vii`), scale-fit key scoring across all 12 major keys for symbol inputs, enharmonic flat spelling (`F, Bb, Eb, Ab, Db, Gb`), and key transposition.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/__tests__/progressionParser.test.ts`
 Expected: PASS (4 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/progressionParser.ts src/__tests__/progressionParser.test.ts
@@ -376,7 +376,7 @@ git commit -m "feat(engine): add dual degree/chord progression parser, key detec
   - `voiceSingleChord(symbol: string, keyRoot: string, prevRightHandMidi?: number[]): { leftHand: NoteInfo[]; rightHand: NoteInfo[]; voiceLeading: VoiceLeadingDiff }`
   - `voiceChordSequence(chords: Array<{ symbol: string; originalSymbol?: string; romanDegree: string; functionRole: 'primary' | 'passing-bridge' | 'modal-borrow'; ruleId: string; beats?: number }>, keyRoot: string): VoicedChord[]`
 
-- [ ] **Step 1: Write the failing test `src/__tests__/voiceLeadingSolver.test.ts`**
+- [x] **Step 1: Write the failing test `src/__tests__/voiceLeadingSolver.test.ts`**
 
 Test that:
 1. In `Dm9 -> G13 -> Cmaj9`, the right-hand voice-leading keeps common tones and moves remaining fingers by only 1–2 semitones (`smoothnessScore >= 80`).
@@ -443,21 +443,21 @@ describe('Smooth Two-Hand Voice-Leading Solver', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/__tests__/voiceLeadingSolver.test.ts`
 Expected: FAIL with `Cannot find module '../engine/voiceLeadingSolver'`
 
-- [ ] **Step 3: Implement `src/engine/voiceLeadingSolver.ts`**
+- [x] **Step 3: Implement `src/engine/voiceLeadingSolver.ts`**
 
 Build candidate 3-to-4-note right-hand voicings (preferring Guide Tones 3rd & 7th + Color Extensions 9th/13th while omitting redundant roots when 4+ notes exist), score transitions by minimal total semitone movement + center-of-gravity penalty around MIDI 63 (`Eb4`), and compute exact `VoiceLeadingDiff` (`keptNotes`, `movedNotes`, `smoothnessScore`) plus plain-Vietnamese finger tips.
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run src/__tests__/voiceLeadingSolver.test.ts`
 Expected: PASS (3 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/voiceLeadingSolver.ts src/__tests__/voiceLeadingSolver.test.ts
@@ -481,7 +481,7 @@ git commit -m "feat(engine): implement two-hand piano voice-leading solver and f
   - `getBridgeCandidates(fromChord: VoicedChord, toChord: VoicedChord, keyRoot: string, vibe: VibeId): BridgeCandidate[]`
   - `insertBridgeChordAt(state: ProgressionState, indexAfter: number, candidate: BridgeCandidate): ProgressionState`
 
-- [ ] **Step 1: Write failing tests `src/__tests__/reharmonizer.test.ts` and `src/__tests__/bridgeSuggester.test.ts`**
+- [x] **Step 1: Write failing tests `src/__tests__/reharmonizer.test.ts` and `src/__tests__/bridgeSuggester.test.ts`**
 
 ```typescript
 // src/__tests__/reharmonizer.test.ts
@@ -546,21 +546,21 @@ describe('Interactive Bridge Suggester ([+] Slot)', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `npx vitest run src/__tests__/reharmonizer.test.ts src/__tests__/bridgeSuggester.test.ts`
 Expected: FAIL with `Cannot find module '../engine/reharmonizer'`
 
-- [ ] **Step 3: Implement `src/engine/reharmonizer.ts` and `src/engine/bridgeSuggester.ts`**
+- [x] **Step 3: Implement `src/engine/reharmonizer.ts` and `src/engine/bridgeSuggester.ts`**
 
 Implement `buildProgressionState`, automatic passing-chord insertion for Spice Level 2 & 3 according to Vibe (`pop-ballad` favors Slash Bass Walkdowns `G/B`, `Em/G` and `sus4`; `rnb-neosoul` favors `m9`, Secondary Dominants `E7#9`/`A7b13`, Diminished Passing; `jazz-bossa` favors `ii-V` interpolations and Tritone Sub `Db7#11`; `cinematic-sad` favors Modal Interchange `Fm6`, `Bbmaj7`), plus `getBridgeCandidates` and `insertBridgeChordAt`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `npx vitest run src/__tests__/reharmonizer.test.ts src/__tests__/bridgeSuggester.test.ts`
 Expected: PASS (4 passed)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/engine/reharmonizer.ts src/engine/bridgeSuggester.ts src/__tests__/reharmonizer.test.ts src/__tests__/bridgeSuggester.test.ts
@@ -585,16 +585,16 @@ git commit -m "feat(engine): add vibe reharmonizer and interactive passing-chord
     - `setInstrumentTone(toneType: 'grand-piano' | 'warm-rhodes'): void`
   - `initWebMidi(onNoteOn: (midi: number) => void, onNoteOff: (midi: number) => void): Promise<{ supported: boolean; deviceNames: string[] }>`
 
-- [ ] **Step 1: Implement `src/audio/pianoAudioEngine.ts` and `src/audio/webMidiService.ts` with safe AudioContext unlocking (Review Focus #5)**
+- [x] **Step 1: Implement `src/audio/pianoAudioEngine.ts` and `src/audio/webMidiService.ts` with safe AudioContext unlocking (Review Focus #5)**
 
 Ensure `await Tone.start()` is called safely on user interaction, provide an instant zero-latency polyphonic warm piano/Rhodes synthesizer fallback so playback works offline immediately even before CDN samples finish loading, and implement the 4 groove patterns (`block`, `ballad-arpeggio`, `rnb-pulse`, `bossa-nova`).
 
-- [ ] **Step 2: Verify TypeScript compilation**
+- [x] **Step 2: Verify TypeScript compilation**
 
 Run: `npx tsc --noEmit`
 Expected: PASS with 0 errors
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add src/audio/pianoAudioEngine.ts src/audio/webMidiService.ts
@@ -619,7 +619,7 @@ git commit -m "feat(audio): add Tone.js Grand Piano/Rhodes groove engine and Web
 - Consumes: all engine, data, and audio modules from Tasks 1–5
 - Produces: Complete interactive Stage 1 Web Application in `src/App.tsx`
 
-- [ ] **Step 1: Write the failing integration test `src/__tests__/App.test.tsx`**
+- [x] **Step 1: Write the failing integration test `src/__tests__/App.test.tsx`**
 
 Test that:
 1. The app renders with default `2 - 5 - 1` progression, displays both Original (`Dm - G - C`) and Reharmonized color chords, and shows the 88-key piano (`A0` to `C8`).
@@ -660,12 +660,12 @@ describe('Piano Harmony Coach UI Integration', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/__tests__/App.test.tsx`
 Expected: FAIL with `Cannot find module '../App'`
 
-- [ ] **Step 3: Implement the 5 UI components and `src/App.tsx`**
+- [x] **Step 3: Implement the 5 UI components and `src/App.tsx`**
 
 Implement:
 - `ProgressionControlBar.tsx`: Input field (Degree / Symbol auto-detected), Key selector (`C`..`B`) with `-1` / `+1` semitone Transpose buttons, 8 one-click Preset pills (`2-5-1`, `2-6-5-1`, `4-5-3-6`, etc.), 4 Vibe cards, and Spice Level selector (`Level 1: Tinh tế`, `Level 2: Mượt mà (+Cầu nối)`, `Level 3: Đậm đặc`).
@@ -674,12 +674,12 @@ Implement:
 - `NotationAndNotesPanel.tsx`: Renders literal note badges (`Tay trái: C2 - G2 | Tay phải: E4 - G4 - B4 - D5`) alongside a `VexFlow` Grand Staff (Treble & Bass clef).
 - `ExplanationAndCurriculum.tsx`: Displays the active chord's plain-Vietnamese explanation (*"Tại sao nghe mượt?"*, *"Mẹo bấm ngón tay"*, *"Cảm xúc"*) and a toggleable **"Kho Tuyệt Chiêu & Giáo Trình Thực Chiến"** drawer listing all 12 curated rules with one-click live demo on the piano.
 
-- [ ] **Step 4: Run full test suite and production build verification**
+- [x] **Step 4: Run full test suite and production build verification**
 
 Run: `npx vitest run && npm run build`
 Expected: All unit & integration tests PASS, and `vite build` succeeds with zero TypeScript or bundler errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/
