@@ -11,7 +11,6 @@ export function getBridgeCandidates(
 ): BridgeCandidate[] {
   const candidates: BridgeCandidate[] = [];
 
-  const fromMain = fromChord.symbol.split('/')[0];
   const toMain = toChord.symbol.split('/')[0];
   const toRoot = toMain.replace(/[^A-G#b]/g, '');
 

@@ -1,5 +1,5 @@
 import { Note } from '@tonaljs/tonal';
-import { ProgressionState, SpiceLevel, VibeId, VoicedChord } from '../types/harmony';
+import { ProgressionState, SpiceLevel, VibeId } from '../types/harmony';
 import { VIBE_PROFILES } from '../data/curriculum';
 import { parseProgressionInput } from './progressionParser';
 import { voiceChordSequence } from './voiceLeadingSolver';
@@ -89,7 +89,7 @@ export function buildProgressionState(
 
   // Handle Spice Level 3 dominant substitution in Jazz/R&B
   if (spiceLevel === 3 && (vibe === 'jazz-bossa' || vibe === 'rnb-neosoul')) {
-    upgradedPrimaries.forEach((ch, idx) => {
+    upgradedPrimaries.forEach((ch) => {
       if (ch.degreeNumber === 5) {
         // Option to add Tritone Sub Db7#11 or rich 13b9
         if (vibe === 'jazz-bossa') {

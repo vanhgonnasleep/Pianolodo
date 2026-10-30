@@ -82,7 +82,7 @@ export function parseProgressionInput(
       keyRoot: preferredKeyRoot,
       keyMode: 'major',
       items: [],
-      scaleNotes: Key.majorKey(preferredKeyRoot).scale,
+      scaleNotes: [...Key.majorKey(preferredKeyRoot).scale],
     };
   }
 
@@ -160,7 +160,7 @@ export function parseProgressionInput(
       keyRoot,
       keyMode: 'major',
       items,
-      scaleNotes: scale,
+      scaleNotes: [...scale],
     };
   }
 
@@ -272,6 +272,6 @@ export function parseProgressionInput(
     keyRoot: detectedKey,
     keyMode: 'major',
     items,
-    scaleNotes: scale,
+    scaleNotes: [...scale],
   };
 }
