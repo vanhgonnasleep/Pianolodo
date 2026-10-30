@@ -1,12 +1,12 @@
-# 🎹 PIANO HARMONY COACH & VOICING STUDIO (CLARION CORE)
+# 🎹 PIANOLODO: PIANO HARMONY COACH & VOICING STUDIO
 ## Báo Cáo Nghiệm Thu Kỹ Thuật, Bản Chất Nhạc Lý, Cơ Chế Giải Thuật & Hướng Dẫn Sử Dụng (HDSD)
 ### Comprehensive Technical Monograph, Harmonic Theory & User Manual — Version 2.0 (Release Code-Freeze)
 
 ---
 
 > **PHÂN LOẠI DỰ ÁN / CLASSIFICATION**: Music Information Retrieval (MIR) • Deterministic Harmony Engine • Ergonomic Voicing Solver  
-> **TRẠNG THÁI / STATUS**: Nghiệm thu hoàn tất 100%, 24/24 Tests Green, Code-Frozen (`v2.0-clarion-executive`)  
-> **KIẾN TRÚC THIẾT KẾ / UI ARCHITECTURE**: Clarion Executive Obsidian Redline (Dark `#0a0f16`, Mint `#2dd4bf`, Amber `#f59e0b`, Blue `#38bdf8`)  
+> **TRẠNG THÁI / STATUS**: Nghiệm thu hoàn tất 100%, 24/24 Tests Green, Code-Frozen (`v2.0-pianolodo-warm-ivory`)  
+> **KIẾN TRÚC THIẾT KẾ / UI ARCHITECTURE**: Warm Ivory & Studio Paper (Light `#FAF8F5`, Surface `#FFFFFF`, Border `#E5DFD7`, Amber Gold `#D97706`, Royal Indigo `#2563EB`)  
 > **NGÔN NGỮ HỖ TRỢ / LOCALIZATION**: Song ngữ toàn diện Tiếng Việt 🇻🇳 & English 🇬🇧  
 
 ---
