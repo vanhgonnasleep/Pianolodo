@@ -1,10 +1,12 @@
 import React, { useEffect, useRef } from 'react';
-import { VoicedChord } from '../types/harmony';
+import { Language, VoicedChord } from '../types/harmony';
 import { pianoAudioEngine } from '../audio/pianoAudioEngine';
+import { t } from '../i18n/translations';
 import { Lock } from 'lucide-react';
 
 interface Piano88KeyboardProps {
   activeChord: VoicedChord | null;
+  lang?: Language;
 }
 
 interface KeyData {
@@ -14,7 +16,6 @@ interface KeyData {
   whiteIndex: number;
 }
 
-// Generate canonical 88 keys (A0 to C8: MIDI 21 to 108)
 const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const ALL_88_KEYS: KeyData[] = [];
 
@@ -32,13 +33,11 @@ for (let midi = 21; midi <= 108; midi++) {
   });
 }
 
-export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord }) => {
+export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord, lang = 'vi' }) => {
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to center around C3-C5
   useEffect(() => {
     if (containerRef.current) {
-      // White key C3 is white index ~15
       const scrollPos = 15 * 24 - 100;
       containerRef.current.scrollLeft = Math.max(0, scrollPos);
     }
@@ -48,12 +47,11 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
   const rhMidis = new Set(activeChord?.rightHand.map((n) => n.midi) || []);
 
   const keptMidis = new Set<number>();
-  const movedMap = new Map<number, number>(); // midi -> semitones
+  const movedMap = new Map<number, number>();
 
   if (activeChord) {
     const diff = activeChord.voiceLeading;
     diff.keptNotes.forEach((nStr) => {
-      // Find midi in rightHand or leftHand
       const found = activeChord.rightHand.find((n) => n.noteName === nStr);
       if (found) keptMidis.add(found.midi);
     });
@@ -65,7 +63,6 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
   }
 
   const handlePlayKey = (midi: number) => {
-    // Play individual note directly
     const note = ALL_88_KEYS.find((k) => k.midi === midi);
     if (!note) return;
     const dummyChord: VoicedChord = {
@@ -84,41 +81,51 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
         },
       ],
       voiceLeading: { keptNotes: [], movedNotes: [], smoothnessScore: 100 },
-      explanation: { ruleId: '', title: '', whySmooth: '', fingerTip: '', emotionTag: '' },
+      explanation: {
+        ruleId: '',
+        title: '',
+        titleEn: '',
+        whySmooth: '',
+        whySmoothEn: '',
+        fingerTip: '',
+        fingerTipEn: '',
+        emotionTag: '',
+        emotionTagEn: '',
+      },
       beats: 1,
     };
     pianoAudioEngine.playVoicedChord(dummyChord, 'block');
   };
 
-  const whiteKeyWidth = 24; // px
-  const whiteKeyHeight = 130; // px
-  const blackKeyWidth = 14; // px
-  const blackKeyHeight = 84; // px
+  const whiteKeyWidth = 24;
+  const whiteKeyHeight = 130;
+  const blackKeyWidth = 14;
+  const blackKeyHeight = 84;
 
   return (
     <div className="bg-slate-950 p-4 border-b border-slate-800 space-y-3">
       {/* Legend & Active Voicing Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">
-          <span className="font-bold text-slate-300">Bàn Phím Piano 88 Phím (A0 - C8):</span>
+          <span className="font-bold text-slate-300">{t('pianoTitle', lang)}</span>
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5 font-semibold text-blue-400">
               <span className="w-3 h-3 rounded-full bg-blue-500 inline-block shadow-sm shadow-blue-500/50" />
-              Tay trái (Bass)
+              {t('leftHand', lang)}
             </span>
             <span className="flex items-center gap-1.5 font-semibold text-amber-400">
               <span className="w-3 h-3 rounded-full bg-amber-500 inline-block shadow-sm shadow-amber-500/50" />
-              Tay phải (Voicing)
+              {t('rightHand', lang)}
             </span>
             <span className="flex items-center gap-1.5 text-slate-400">
               <Lock className="w-3.5 h-3.5 text-amber-300" />
-              Giữ nốt chung
+              {t('keptNotesLegend', lang)}
             </span>
           </div>
         </div>
 
         <div className="text-slate-400 text-[11px] font-mono">
-          Khu vực bấm ngón: <span className="text-white font-bold">C2 (MIDI 36) — G5 (MIDI 79)</span>
+          {t('fingerZone', lang)}
         </div>
       </div>
 
@@ -153,7 +160,6 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
                 }}
                 className={`absolute top-0 rounded-b-md border-r border-b border-l border-slate-400/80 cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 ${bgClass}`}
               >
-                {/* Movement / Kept Badge */}
                 {isKept && (
                   <div className="absolute top-1 bg-amber-400/90 text-slate-950 text-[9px] rounded-full p-0.5 shadow">
                     <Lock className="w-2.5 h-2.5" />
@@ -164,8 +170,6 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
                     {moved > 0 ? `+${moved}` : moved}
                   </div>
                 )}
-
-                {/* Key Label */}
                 <span className="text-[10px] font-semibold leading-none">{k.noteName}</span>
               </div>
             );
@@ -175,7 +179,6 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
           {ALL_88_KEYS.map((k, idx) => {
             if (!k.isBlack) return null;
 
-            // Find preceding white key index
             const prevWhite = ALL_88_KEYS.slice(0, idx)
               .reverse()
               .find((item) => !item.isBlack);
@@ -203,7 +206,6 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({ activeChord })
                 }}
                 className={`absolute top-0 z-10 rounded-b border cursor-pointer flex flex-col justify-end items-center pb-1.5 transition duration-75 shadow-md ${bgClass}`}
               >
-                {/* Movement / Kept Badge */}
                 {isKept && (
                   <div className="absolute top-0.5 bg-amber-400 text-slate-950 text-[8px] rounded-full p-0.5">
                     <Lock className="w-2 h-2" />

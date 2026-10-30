@@ -1,18 +1,21 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { BridgeCandidate, GroovePatternId, PresetProgression, SpiceLevel, VibeId } from './types/harmony';
+import { BridgeCandidate, GroovePatternId, Language, PresetProgression, SpiceLevel, VibeId } from './types/harmony';
 import { buildProgressionState } from './engine/reharmonizer';
 import { insertBridgeChordAt } from './engine/bridgeSuggester';
 import { transposeKeyRoot } from './engine/progressionParser';
 import { InstrumentToneType, pianoAudioEngine } from './audio/pianoAudioEngine';
 import { initWebMidi } from './audio/webMidiService';
 import { VIBE_PROFILES } from './data/curriculum';
+import { t } from './i18n/translations';
 import { ProgressionControlBar } from './components/ProgressionControlBar';
 import { ChordTimeline } from './components/ChordTimeline';
 import { Piano88Keyboard } from './components/Piano88Keyboard';
 import { NotationAndNotesPanel } from './components/NotationAndNotesPanel';
 import { ExplanationAndCurriculum } from './components/ExplanationAndCurriculum';
+import { FocusMusicModal } from './components/FocusMusicModal';
 
 export const App: React.FC = () => {
+  const [lang, setLang] = useState<Language>('vi');
   const [rawInput, setRawInput] = useState<string>('2 - 5 - 1');
   const [keyRoot, setKeyRoot] = useState<string>('C');
   const [vibe, setVibe] = useState<VibeId>('pop-ballad');
@@ -27,8 +30,9 @@ export const App: React.FC = () => {
   const [bpm, setBpm] = useState<number>(85);
   const [instrumentTone, setInstrumentTone] = useState<InstrumentToneType>('grand-piano');
 
-  // Curriculum Drawer
+  // Modals
   const [isCurriculumOpen, setIsCurriculumOpen] = useState<boolean>(false);
+  const [isFocusModalOpen, setIsFocusModalOpen] = useState<boolean>(false);
 
   // Computed Progression State
   const [customState, setCustomState] = useState<ReturnType<typeof buildProgressionState> | null>(null);
@@ -40,25 +44,21 @@ export const App: React.FC = () => {
     return buildProgressionState(rawInput, vibe, spiceLevel, keyRoot);
   }, [rawInput, vibe, spiceLevel, keyRoot, customState]);
 
-  // Sync keyRoot if auto-detected differently
   useEffect(() => {
     if (progressionState.keyRoot && progressionState.keyRoot !== keyRoot) {
       setKeyRoot(progressionState.keyRoot);
     }
   }, [progressionState.keyRoot, keyRoot]);
 
-  // Clamp activeChordIndex if chords length changed
   useEffect(() => {
     if (activeChordIndex >= progressionState.reharmonizedChords.length) {
       setActiveChordIndex(Math.max(0, progressionState.reharmonizedChords.length - 1));
     }
   }, [activeChordIndex, progressionState.reharmonizedChords.length]);
 
-  // Connect Web MIDI on mount
   useEffect(() => {
     initWebMidi(
       (note) => {
-        // External keyboard note on
         console.log('MIDI Note On:', note);
       },
       (note) => {
@@ -171,6 +171,7 @@ export const App: React.FC = () => {
   };
 
   const activeChord = progressionState.reharmonizedChords[activeChordIndex] || null;
+  const progressionChordsStr = progressionState.reharmonizedChords.map((c) => c.symbol).join(' - ');
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-slate-950">
@@ -189,6 +190,9 @@ export const App: React.FC = () => {
         onInstrumentChange={handleInstrumentChange}
         onSelectPreset={handleSelectPreset}
         onOpenCurriculum={() => setIsCurriculumOpen(true)}
+        onOpenFocusMusic={() => setIsFocusModalOpen(true)}
+        lang={lang}
+        onToggleLang={setLang}
       />
 
       {/* 2. Interactive Chord Timeline */}
@@ -210,13 +214,14 @@ export const App: React.FC = () => {
         onInsertBridge={handleInsertBridge}
         keyRoot={keyRoot}
         vibe={vibe}
+        lang={lang}
       />
 
       {/* 3. 88-Key Split-Hand Piano Keyboard */}
-      <Piano88Keyboard activeChord={activeChord} />
+      <Piano88Keyboard activeChord={activeChord} lang={lang} />
 
       {/* 4. Notation & Literal Notes Panel */}
-      <NotationAndNotesPanel activeChord={activeChord} />
+      <NotationAndNotesPanel activeChord={activeChord} lang={lang} />
 
       {/* 5. Plain-Vietnamese Explanations & Curriculum Drawer */}
       <ExplanationAndCurriculum
@@ -224,15 +229,25 @@ export const App: React.FC = () => {
         isCurriculumOpen={isCurriculumOpen}
         onCloseCurriculum={() => setIsCurriculumOpen(false)}
         onSelectProgressionFormula={(formula) => handleInputChange(formula)}
+        lang={lang}
+      />
+
+      {/* 6. Focus Music Architect Modal */}
+      <FocusMusicModal
+        isOpen={isFocusModalOpen}
+        onClose={() => setIsFocusModalOpen(false)}
+        keyRoot={keyRoot}
+        progressionChordsStr={progressionChordsStr}
+        lang={lang}
       />
 
       {/* Footer */}
       <footer className="mt-auto py-4 px-6 border-t border-slate-900 text-center text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2">
         <div>
-          Piano Harmony Coach © 2026 • Lõi nhạc lý tất định 100% Offline • Zero-Latency
+          {t('footerLeft', lang)}
         </div>
         <div className="text-[11px] text-slate-400">
-          Chặng 1 Hoàn Thành • Sẵn sàng cho Chặng 2 (Cảm Âm & Mò Nốt Giai Điệu)
+          {t('footerRight', lang)}
         </div>
       </footer>
     </div>

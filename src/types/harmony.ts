@@ -1,6 +1,7 @@
 export type VibeId = 'pop-ballad' | 'rnb-neosoul' | 'jazz-bossa' | 'cinematic-sad';
 export type SpiceLevel = 1 | 2 | 3;
 export type GroovePatternId = 'block' | 'ballad-arpeggio' | 'rnb-pulse' | 'bossa-nova';
+export type Language = 'vi' | 'en';
 
 export type RuleCategory =
   | 'extension'
@@ -14,11 +15,15 @@ export interface CurriculumRule {
   id: string;
   category: RuleCategory;
   titleVi: string;
+  titleEn: string;
   sourceBook: string;
   formulaSummary: string;
   whySmoothVi: string;
+  whySmoothEn: string;
   fingerTipVi: string;
+  fingerTipEn: string;
   emotionTagVi: string;
+  emotionTagEn: string;
   exampleInC: {
     before: string;
     after: string;
@@ -28,7 +33,9 @@ export interface CurriculumRule {
 export interface VibeProfile {
   id: VibeId;
   nameVi: string;
+  nameEn: string;
   subtitleVi: string;
+  subtitleEn: string;
   preferredMajorI: string;
   preferredMajorIV: string;
   preferredMinorII: string;
@@ -68,9 +75,13 @@ export interface VoicedChord {
   explanation: {
     ruleId: string;
     title: string;
+    titleEn: string;
     whySmooth: string;
+    whySmoothEn: string;
     fingerTip: string;
+    fingerTipEn: string;
     emotionTag: string;
+    emotionTagEn: string;
   };
   beats: number;
 }
@@ -80,7 +91,9 @@ export interface BridgeCandidate {
   symbol: string;
   romanDegree: string;
   techniqueName: string;
+  techniqueNameEn: string;
   whySmooth: string;
+  whySmoothEn: string;
   ruleId: string;
   previewChord: VoicedChord;
 }
@@ -88,10 +101,12 @@ export interface BridgeCandidate {
 export interface PresetProgression {
   id: string;
   nameVi: string;
+  nameEn: string;
   degreeInput: string;
   defaultKey: string;
   defaultVibe: VibeId;
   descriptionVi: string;
+  descriptionEn: string;
 }
 
 export interface ParsedChordItem {
@@ -112,4 +127,21 @@ export interface ProgressionState {
   originalChords: VoicedChord[];
   reharmonizedChords: VoicedChord[];
   scaleNotes: string[];
+}
+
+export type FocusProfileId =
+  | 'deep-coding'
+  | 'analytical-felt'
+  | 'chillsynth-sprint'
+  | 'alpha-reset';
+
+export interface FocusSoundscapeProfile {
+  id: FocusProfileId;
+  nameVi: string;
+  nameEn: string;
+  targetBpm: number;
+  descriptionVi: string;
+  descriptionEn: string;
+  noiseType: 'vinyl' | 'brown' | 'rain' | 'drone';
+  hasAlphaWave: boolean;
 }

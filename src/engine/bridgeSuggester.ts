@@ -29,7 +29,9 @@ export function getBridgeCandidates(
       symbol,
       romanDegree: 'V/7',
       techniqueName: 'Đi Bass liền bậc (Slash Bass Walkdown)',
+      techniqueNameEn: 'Step-wise Slash Bass Walkdown',
       whySmooth: rule.whySmoothVi,
+      whySmoothEn: rule.whySmoothEn,
       ruleId: 'slash-walkdown-i-vi',
       previewChord: {
         id: `preview-${symbol}`,
@@ -42,9 +44,13 @@ export function getBridgeCandidates(
         explanation: {
           ruleId: rule.id,
           title: rule.titleVi,
+          titleEn: rule.titleEn,
           whySmooth: rule.whySmoothVi,
+          whySmoothEn: rule.whySmoothEn,
           fingerTip: rule.fingerTipVi,
+          fingerTipEn: rule.fingerTipEn,
           emotionTag: rule.emotionTagVi,
+          emotionTagEn: rule.emotionTagEn,
         },
         beats: 2,
       },
@@ -61,7 +67,9 @@ export function getBridgeCandidates(
       symbol,
       romanDegree: 'iii/5',
       techniqueName: 'Đi Bass liền bậc (Slash Bass Walkdown)',
+      techniqueNameEn: 'Step-wise Slash Bass Walkdown',
       whySmooth: rule.whySmoothVi,
+      whySmoothEn: rule.whySmoothEn,
       ruleId: 'slash-walkdown-vi-iv',
       previewChord: {
         id: `preview-${symbol}`,
@@ -74,9 +82,13 @@ export function getBridgeCandidates(
         explanation: {
           ruleId: rule.id,
           title: rule.titleVi,
+          titleEn: rule.titleEn,
           whySmooth: rule.whySmoothVi,
+          whySmoothEn: rule.whySmoothEn,
           fingerTip: rule.fingerTipVi,
+          fingerTipEn: rule.fingerTipEn,
           emotionTag: rule.emotionTagVi,
+          emotionTagEn: rule.emotionTagEn,
         },
         beats: 2,
       },
@@ -92,7 +104,9 @@ export function getBridgeCandidates(
       symbol,
       romanDegree: 'V/7',
       techniqueName: 'Đi Bass liền bậc (Slash Bass Walkdown)',
+      techniqueNameEn: 'Step-wise Slash Bass Walkdown',
       whySmooth: 'Tạo bước trượt Bass liền bậc êm dịu dẫn lối sang hợp âm tiếp theo.',
+      whySmoothEn: 'Creates a gentle step-wise bass slide guiding smoothly into the target chord.',
       ruleId: 'slash-walkdown-i-vi',
       previewChord: {
         id: `preview-${symbol}`,
@@ -105,9 +119,13 @@ export function getBridgeCandidates(
         explanation: {
           ruleId: rule.id,
           title: rule.titleVi,
+          titleEn: rule.titleEn,
           whySmooth: rule.whySmoothVi,
+          whySmoothEn: rule.whySmoothEn,
           fingerTip: rule.fingerTipVi,
+          fingerTipEn: rule.fingerTipEn,
           emotionTag: rule.emotionTagVi,
+          emotionTagEn: rule.emotionTagEn,
         },
         beats: 2,
       },
@@ -130,7 +148,9 @@ export function getBridgeCandidates(
     symbol: secDomSymbol,
     romanDegree: `V7/${toChord.romanDegree.replace(/[^IivV]/g, '') || 'x'}`,
     techniqueName: 'Bậc V phụ hút mạnh (Secondary Dominant)',
+    techniqueNameEn: 'Secondary Dominant',
     whySmooth: secDomRule.whySmoothVi,
+    whySmoothEn: secDomRule.whySmoothEn,
     ruleId: secDomRule.id,
     previewChord: {
       id: `preview-${secDomSymbol}`,
@@ -143,9 +163,13 @@ export function getBridgeCandidates(
       explanation: {
         ruleId: secDomRule.id,
         title: secDomRule.titleVi,
+        titleEn: secDomRule.titleEn,
         whySmooth: secDomRule.whySmoothVi,
+        whySmoothEn: secDomRule.whySmoothEn,
         fingerTip: secDomRule.fingerTipVi,
+        fingerTipEn: secDomRule.fingerTipEn,
         emotionTag: secDomRule.emotionTagVi,
+        emotionTagEn: secDomRule.emotionTagEn,
       },
       beats: 2,
     },
@@ -162,7 +186,9 @@ export function getBridgeCandidates(
     symbol: dimSymbol,
     romanDegree: '#Idim7',
     techniqueName: 'Diminished bắc cầu nửa cung (Passing Diminished)',
+    techniqueNameEn: 'Passing Diminished',
     whySmooth: dimRule.whySmoothVi,
+    whySmoothEn: dimRule.whySmoothEn,
     ruleId: 'dim-passing-sharp-i',
     previewChord: {
       id: `preview-${dimSymbol}`,
@@ -175,9 +201,13 @@ export function getBridgeCandidates(
       explanation: {
         ruleId: dimRule.id,
         title: dimRule.titleVi,
+        titleEn: dimRule.titleEn,
         whySmooth: dimRule.whySmoothVi,
+        whySmoothEn: dimRule.whySmoothEn,
         fingerTip: dimRule.fingerTipVi,
+        fingerTipEn: dimRule.fingerTipEn,
         emotionTag: dimRule.emotionTagVi,
+        emotionTagEn: dimRule.emotionTagEn,
       },
       beats: 2,
     },
@@ -194,7 +224,9 @@ export function getBridgeCandidates(
     symbol: tritoneSymbol,
     romanDegree: 'bII7#11',
     techniqueName: 'Thế âm ba cung (Tritone Sub)',
+    techniqueNameEn: 'Tritone Substitution',
     whySmooth: tritoneRule.whySmoothVi,
+    whySmoothEn: tritoneRule.whySmoothEn,
     ruleId: 'tritone-sub-bii7',
     previewChord: {
       id: `preview-${tritoneSymbol}`,
@@ -207,9 +239,13 @@ export function getBridgeCandidates(
       explanation: {
         ruleId: tritoneRule.id,
         title: tritoneRule.titleVi,
+        titleEn: tritoneRule.titleEn,
         whySmooth: tritoneRule.whySmoothVi,
+        whySmoothEn: tritoneRule.whySmoothEn,
         fingerTip: tritoneRule.fingerTipVi,
+        fingerTipEn: tritoneRule.fingerTipEn,
         emotionTag: tritoneRule.emotionTagVi,
+        emotionTagEn: tritoneRule.emotionTagEn,
       },
       beats: 2,
     },
@@ -228,7 +264,6 @@ export function insertBridgeChordAt(
     return state;
   }
 
-  // Adjust beats of chord before bridge to 2
   currentChords[indexAfter] = {
     ...currentChords[indexAfter],
     beats: 2,
@@ -242,7 +277,6 @@ export function insertBridgeChordAt(
 
   currentChords.splice(indexAfter + 1, 0, newBridgeVoiced);
 
-  // Re-voice the entire sequence to guarantee seamless voice-leading
   const revoicedInput = currentChords.map((ch) => ({
     symbol: ch.symbol,
     originalSymbol: ch.originalSymbol,

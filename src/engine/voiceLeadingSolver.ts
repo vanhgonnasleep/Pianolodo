@@ -368,9 +368,13 @@ export function voiceChordSequence(
       explanation: {
         ruleId: rule.id,
         title: rule.titleVi,
+        titleEn: rule.titleEn,
         whySmooth: rule.whySmoothVi,
+        whySmoothEn: rule.whySmoothEn,
         fingerTip: rule.fingerTipVi,
+        fingerTipEn: rule.fingerTipEn,
         emotionTag: rule.emotionTagVi,
+        emotionTagEn: rule.emotionTagEn,
       },
       beats: ch.beats ?? 4,
     });

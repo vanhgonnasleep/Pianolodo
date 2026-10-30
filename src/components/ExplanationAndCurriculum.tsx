@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { CurriculumRule, RuleCategory, VoicedChord } from '../types/harmony';
+import { CurriculumRule, Language, RuleCategory, VoicedChord } from '../types/harmony';
 import { CURRICULUM_RULES } from '../data/curriculum';
+import { t } from '../i18n/translations';
 import { Lightbulb, Hand, Heart, BookOpen, X, Sparkles } from 'lucide-react';
 
 interface ExplanationAndCurriculumProps {
@@ -8,9 +9,10 @@ interface ExplanationAndCurriculumProps {
   isCurriculumOpen: boolean;
   onCloseCurriculum: () => void;
   onSelectProgressionFormula?: (formula: string) => void;
+  lang?: Language;
 }
 
-const CATEGORY_LABELS: Record<RuleCategory, string> = {
+const CATEGORY_LABELS_VI: Record<RuleCategory, string> = {
   extension: 'Hợp Âm Màu (Color Extensions)',
   'slash-bass': 'Đi Bass Liền Bậc (Slash Chords)',
   'secondary-dominant': 'Bậc V Phụ (Secondary Dominant)',
@@ -19,13 +21,25 @@ const CATEGORY_LABELS: Record<RuleCategory, string> = {
   'modal-interchange': 'Mượn Màu Giọng Thứ (Modal Borrow)',
 };
 
+const CATEGORY_LABELS_EN: Record<RuleCategory, string> = {
+  extension: 'Color Extensions (9th, 11th, 13th)',
+  'slash-bass': 'Step-wise Slash Bass (Walkdowns)',
+  'secondary-dominant': 'Secondary Dominants (V7/x)',
+  'diminished-passing': 'Chromatic Passing Diminished',
+  'tritone-sub': 'Tritone Substitution (bII7)',
+  'modal-interchange': 'Modal Interchange (Minor Borrowing)',
+};
+
 export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> = ({
   activeChord,
   isCurriculumOpen,
   onCloseCurriculum,
   onSelectProgressionFormula,
+  lang = 'vi',
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+
+  const categoryLabels = lang === 'vi' ? CATEGORY_LABELS_VI : CATEGORY_LABELS_EN;
 
   const filteredRules =
     selectedCategory === 'all'
@@ -44,13 +58,18 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                 ({activeChord.romanDegree})
               </span>
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                {activeChord.explanation.title}
+                {lang === 'vi' ? activeChord.explanation.title : activeChord.explanation.titleEn || activeChord.explanation.title}
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 text-xs text-rose-300 bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
               <Heart className="w-3.5 h-3.5 fill-current" />
-              <span>Cảm xúc: {activeChord.explanation.emotionTag}</span>
+              <span>
+                {t('emotionTag', lang)}{' '}
+                {lang === 'vi'
+                  ? activeChord.explanation.emotionTag
+                  : activeChord.explanation.emotionTagEn || activeChord.explanation.emotionTag}
+              </span>
             </div>
           </div>
 
@@ -59,10 +78,12 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
                 <Lightbulb className="w-4 h-4 text-amber-400" />
-                Tại sao nghe mượt? (Bản chất hòa thanh)
+                {t('whySmooth', lang)}
               </div>
               <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                {activeChord.explanation.whySmooth}
+                {lang === 'vi'
+                  ? activeChord.explanation.whySmooth
+                  : activeChord.explanation.whySmoothEn || activeChord.explanation.whySmooth}
               </p>
             </div>
 
@@ -70,10 +91,12 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
             <div className="bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
                 <Hand className="w-4 h-4 text-blue-400" />
-                Mẹo bấm ngón tay (Voice-Leading Tip)
+                {t('fingerTip', lang)}
               </div>
               <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
-                {activeChord.explanation.fingerTip}
+                {lang === 'vi'
+                  ? activeChord.explanation.fingerTip
+                  : activeChord.explanation.fingerTipEn || activeChord.explanation.fingerTip}
               </p>
             </div>
           </div>
@@ -89,10 +112,10 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
               <div>
                 <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-amber-400" />
-                  Kho Giáo Trình & 12 Tuyệt Chiêu Hòa Thanh Piano Thực Chiến
+                  {t('curriculumModalTitle', lang)}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Đúc kết từ Berklee Contemporary Harmony & Mark Levine Jazz Piano Book
+                  {t('curriculumModalDesc', lang)}
                 </p>
               </div>
               <button
@@ -113,9 +136,9 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
-                Tất cả (12 chiêu)
+                {t('filterAll', lang)}
               </button>
-              {Object.entries(CATEGORY_LABELS).map(([cat, label]) => (
+              {Object.entries(categoryLabels).map(([cat, label]) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
@@ -140,7 +163,7 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                        {CATEGORY_LABELS[rule.category]}
+                        {categoryLabels[rule.category]}
                       </span>
                       <span className="text-[10px] text-slate-500 font-mono">
                         {rule.sourceBook}
@@ -148,7 +171,7 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                     </div>
 
                     <h4 className="text-sm font-bold text-white group-hover:text-amber-400 transition">
-                      {rule.titleVi}
+                      {lang === 'vi' ? rule.titleVi : rule.titleEn}
                     </h4>
 
                     {/* Formula box */}
@@ -156,11 +179,13 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                       {rule.formulaSummary}
                     </div>
 
-                    <p className="text-xs text-slate-300 leading-relaxed">{rule.whySmoothVi}</p>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      {lang === 'vi' ? rule.whySmoothVi : rule.whySmoothEn}
+                    </p>
 
                     <div className="pt-2 border-t border-slate-900 flex items-center justify-between text-xs">
                       <span className="text-slate-400 text-[11px] italic">
-                        Ví dụ: {rule.exampleInC.before} → {rule.exampleInC.after}
+                        {lang === 'vi' ? 'Ví dụ' : 'Example'}: {rule.exampleInC.before} &rarr; {rule.exampleInC.after}
                       </span>
                       {onSelectProgressionFormula && (
                         <button
@@ -171,7 +196,7 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
                           className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-amber-500 hover:text-slate-950 text-slate-200 text-xs font-semibold transition"
                         >
                           <Sparkles className="w-3 h-3" />
-                          Thử ngay
+                          {t('tryNow', lang)}
                         </button>
                       )}
                     </div>

@@ -1,13 +1,18 @@
 import React, { useEffect, useRef } from 'react';
-import { VoicedChord } from '../types/harmony';
+import { Language, VoicedChord } from '../types/harmony';
 import { Renderer, Stave, StaveNote, Formatter, StaveConnector, Voice } from 'vexflow';
+import { t } from '../i18n/translations';
 import { Music, CheckCircle2, ArrowRight } from 'lucide-react';
 
 interface NotationAndNotesPanelProps {
   activeChord: VoicedChord | null;
+  lang?: Language;
 }
 
-export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ activeChord }) => {
+export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
+  activeChord,
+  lang = 'vi',
+}) => {
   const vexflowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -97,7 +102,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
   if (!activeChord) {
     return (
       <div className="bg-slate-900 p-4 rounded-2xl border border-slate-800 text-slate-400 text-xs">
-        Chọn hợp âm để xem khuông nhạc & nốt bấm
+        {lang === 'vi' ? 'Chọn hợp âm để xem khuông nhạc & nốt bấm' : 'Select a chord to view sheet notation & note voicings'}
       </div>
     );
   }
@@ -111,7 +116,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <Music className="w-4 h-4 text-amber-400" />
-            Chi Tiết Nốt Bấm Từng Tay (Finger Voicing)
+            {t('voicingDetailTitle', lang)}
           </h3>
           <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/30">
             {activeChord.symbol} ({activeChord.romanDegree})
@@ -123,8 +128,8 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
           {/* Left Hand */}
           <div className="bg-slate-950 p-3.5 rounded-xl border border-blue-500/30 space-y-2">
             <div className="text-xs font-bold text-blue-400 flex items-center justify-between">
-              <span>Tay trái (Bass):</span>
-              <span className="text-[10px] text-slate-400">Quãng trầm C2 - B3</span>
+              <span>{t('leftHand', lang)}:</span>
+              <span className="text-[10px] text-slate-400">{t('lhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {leftHand.map((n, idx) => (
@@ -142,8 +147,8 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
           {/* Right Hand */}
           <div className="bg-slate-950 p-3.5 rounded-xl border border-amber-500/30 space-y-2">
             <div className="text-xs font-bold text-amber-400 flex items-center justify-between">
-              <span>Tay phải (Voicing):</span>
-              <span className="text-[10px] text-slate-400">Quãng giữa E4 - D5</span>
+              <span>{t('rightHand', lang)}:</span>
+              <span className="text-[10px] text-slate-400">{t('rhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {rightHand.map((n, idx) => (
@@ -162,9 +167,9 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
         {/* Finger movement diff readout */}
         <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 text-xs space-y-2">
           <div className="font-semibold text-slate-300 flex items-center justify-between">
-            <span>Chuyển động ngón tay so với hợp âm trước:</span>
+            <span>{t('movementDiffTitle', lang)}</span>
             <span className="text-emerald-400 font-mono font-bold">
-              Độ mượt: {voiceLeading.smoothnessScore}/100
+              {t('smoothScore', lang)}: {voiceLeading.smoothnessScore}/100
             </span>
           </div>
 
@@ -172,7 +177,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
             {voiceLeading.keptNotes.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Giữ nguyên ngón:</span>
+                <span>{t('keptNotesLabel', lang)}</span>
                 <span className="font-mono font-bold text-emerald-300">
                   {voiceLeading.keptNotes.join(', ')}
                 </span>
@@ -181,7 +186,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
 
             {voiceLeading.movedNotes.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
-                <span>Dịch ngón:</span>
+                <span>{t('movedNotesLabel', lang)}</span>
                 {voiceLeading.movedNotes.map((m, idx) => (
                   <span
                     key={idx}
@@ -195,7 +200,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
             )}
 
             {voiceLeading.keptNotes.length === 0 && voiceLeading.movedNotes.length === 0 && (
-              <span className="text-slate-500 italic">Hợp âm đầu tiên trong vòng</span>
+              <span className="text-slate-500 italic">{t('firstChordLabel', lang)}</span>
             )}
           </div>
         </div>
@@ -204,7 +209,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({ ac
       {/* Column 2: VexFlow Grand Staff Notation */}
       <div className="md:col-span-5 flex flex-col items-center justify-center bg-slate-950 p-3 rounded-2xl border border-slate-800">
         <div className="text-xs font-semibold text-slate-400 mb-1 w-full text-left flex items-center justify-between">
-          <span>Khuông Nhạc Đôi (Grand Staff):</span>
+          <span>{t('grandStaffTitle', lang)}</span>
           <span className="text-[10px] text-slate-500">VexFlow 5 SVG</span>
         </div>
         <div
