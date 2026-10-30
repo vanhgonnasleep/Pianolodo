@@ -1,0 +1,68 @@
+import { PresetProgression } from '../types/harmony';
+
+export const PRESET_PROGRESSIONS: PresetProgression[] = [
+  {
+    id: 'preset-2-5-1',
+    nameVi: '2 - 5 - 1 (Kinh Điển Mọi Thời Đại)',
+    degreeInput: '2 - 5 - 1',
+    defaultKey: 'C',
+    defaultVibe: 'rnb-neosoul',
+    descriptionVi: 'Vòng hòa thanh nền tảng của Jazz, Pop và R&B. Chuyển từ mờ ảo (ii) sang căng thẳng (V) rồi đáp nhẹ nhàng về nhà (I).',
+  },
+  {
+    id: 'preset-2-6-5-1',
+    nameVi: '2 - 6 - 5 - 1 (V-Pop & Ballad Sâu Lắng)',
+    degreeInput: '2 - 6 - 5 - 1',
+    defaultKey: 'C',
+    defaultVibe: 'pop-ballad',
+    descriptionVi: 'Cực kỳ phổ biến trong các bản Ballad Việt & Hàn (Ví dụ: Nàng Thơ, Cơn Mưa Băng Giá). Âm hưởng man mác đầy chất thơ.',
+  },
+  {
+    id: 'preset-1-6-2-5',
+    nameVi: '1 - 6 - 2 - 5 (Vòng Lặp Bất Hủ 50s - Neo-Soul)',
+    degreeInput: '1 - 6 - 2 - 5',
+    defaultKey: 'C',
+    defaultVibe: 'rnb-neosoul',
+    descriptionVi: 'Vòng xoay tròn không có điểm dừng, tạo nền tảng bất hủ cho các bản hit R&B, Soul và Pop bất tận.',
+  },
+  {
+    id: 'preset-4-5-3-6',
+    nameVi: '4 - 5 - 3 - 6 (Vòng Hoàng Gia Royal Road)',
+    degreeInput: '4 - 5 - 3 - 6',
+    defaultKey: 'C',
+    defaultVibe: 'pop-ballad',
+    descriptionVi: 'Vòng hợp âm thống trị Anime và J-Pop (Oudou Shinkou). Khởi đầu từ bậc IV bay bổng, tạo cảm xúc vút cao và thôi thúc mãnh liệt.',
+  },
+  {
+    id: 'preset-canon',
+    nameVi: 'Canon In D (1 - 5 - 6 - 3 - 4 - 1 - 2 - 5)',
+    degreeInput: '1 - 5 - 6 - 3 - 4 - 1 - 2 - 5',
+    defaultKey: 'C',
+    defaultVibe: 'pop-ballad',
+    descriptionVi: 'Bản trường ca hòa thanh của Pachelbel — khuôn mẫu vàng cho hàng nghìn bản hit thế giới từ Cổ điển tới Pop đương đại.',
+  },
+  {
+    id: 'preset-4-3-6',
+    nameVi: '4 - 3 - 6 (Lắng Đọng Cao Trào Điệp Khúc)',
+    degreeInput: '4 - 3 - 6',
+    defaultKey: 'C',
+    defaultVibe: 'cinematic-sad',
+    descriptionVi: 'Cú hãm phanh cảm xúc cực mạnh thường thấy ở đoạn Bridge hoặc tiền điệp khúc, đưa giai điệu vào chiều sâu nghẹn ngào.',
+  },
+  {
+    id: 'preset-1-6-4-5',
+    nameVi: '1 - 6 - 4 - 5 (Ballad Thập Niên 50 Lãng Mạn)',
+    degreeInput: '1 - 6 - 4 - 5',
+    defaultKey: 'C',
+    defaultVibe: 'pop-ballad',
+    descriptionVi: 'Giai điệu hoài niệm trong sáng của Stand By Me và hàng loạt bản tình ca vượt thời gian.',
+  },
+  {
+    id: 'preset-6-4-1-5',
+    nameVi: '6 - 4 - 1 - 5 (Sad Indie & Pop Hiện Đại)',
+    degreeInput: '6 - 4 - 1 - 5',
+    defaultKey: 'C',
+    defaultVibe: 'cinematic-sad',
+    descriptionVi: 'Bắt đầu từ giọng Thứ bậc vi, tràn đầy chất tự sự, sâu lắng và cuốn hút trong âm nhạc hiện đại.',
+  },
+];
