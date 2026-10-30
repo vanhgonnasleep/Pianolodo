@@ -145,3 +145,21 @@ export interface FocusSoundscapeProfile {
   noiseType: 'vinyl' | 'brown' | 'rain' | 'drone';
   hasAlphaWave: boolean;
 }
+
+export interface ProgressionOption {
+  id: string;
+  titleVi: string;
+  titleEn: string;
+  badgeVi: string;
+  badgeEn: string;
+  vibe: VibeId;
+  spiceLevel: SpiceLevel;
+  formula: string;
+  chordsSummary: string;
+  smoothnessScore: number;
+  rationaleVi: string;
+  rationaleEn: string;
+  emotionTagVi: string;
+  emotionTagEn: string;
+  progressionState: ProgressionState;
+}

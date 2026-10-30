@@ -4,12 +4,14 @@ import {
   GroovePatternId,
   Language,
   PresetProgression,
+  ProgressionOption,
   SpiceLevel,
   VibeId,
 } from './types/harmony';
 import { buildProgressionState } from './engine/reharmonizer';
 import { insertBridgeChordAt } from './engine/bridgeSuggester';
 import { transposeKeyRoot } from './engine/progressionParser';
+import { generateProgressionOptions } from './engine/progressionSuggester';
 import { InstrumentToneType, pianoAudioEngine } from './audio/pianoAudioEngine';
 import { initWebMidi } from './audio/webMidiService';
 import { VIBE_PROFILES } from './data/curriculum';
@@ -17,6 +19,7 @@ import { t } from './i18n/translations';
 import { ClarionSidebar, NavTabId } from './components/ClarionSidebar';
 import { ClarionTopNav } from './components/ClarionTopNav';
 import { ProgressionControlBar } from './components/ProgressionControlBar';
+import { AiProgressionSuggester } from './components/AiProgressionSuggester';
 import { ChordTimeline } from './components/ChordTimeline';
 import { Piano88Keyboard } from './components/Piano88Keyboard';
 import { NotationAndNotesPanel } from './components/NotationAndNotesPanel';
@@ -122,6 +125,18 @@ export const App: React.FC = () => {
     setKeyRoot(preset.defaultKey);
     setVibe(preset.defaultVibe);
     setGroove(VIBE_PROFILES[preset.defaultVibe].defaultGroove);
+    setActiveChordIndex(0);
+  };
+
+  const progressionOptions = useMemo(() => {
+    return generateProgressionOptions(rawInput, keyRoot);
+  }, [rawInput, keyRoot]);
+
+  const handleSelectProgressionOption = (opt: ProgressionOption) => {
+    setCustomState(opt.progressionState);
+    setRawInput(opt.formula);
+    setVibe(opt.vibe);
+    setSpiceLevel(opt.spiceLevel);
     setActiveChordIndex(0);
   };
 
@@ -390,6 +405,14 @@ export const App: React.FC = () => {
                 onOpenFocusMusic={() => setIsFocusModalOpen(true)}
                 lang={lang}
                 onToggleLang={setLang}
+              />
+
+              {/* AI Progression Options Suggester */}
+              <AiProgressionSuggester
+                options={progressionOptions}
+                onSelectOption={handleSelectProgressionOption}
+                lang={lang}
+                currentRawInput={rawInput}
               />
 
               {/* Interactive Chord Timeline */}
