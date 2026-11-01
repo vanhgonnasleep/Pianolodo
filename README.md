@@ -11,6 +11,21 @@
 
 ---
 
+## 🌐 Live Web Demo & Zero-Setup Access
+
+Experience Pianolodo live online without running any local servers or installing dependencies:
+
+* **Official Live URL (GitHub Pages):** [https://vanhgonnasleep.github.io/Pianolodo/](https://vanhgonnasleep.github.io/Pianolodo/)
+* **1-Click Free Domain Deploy (Vercel):**  
+  [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvanhgonnasleep%2FPianolodo)
+
+### ⚡ Run Locally Without `npm run dev` (1-Click Launch)
+If you already have the repository on your computer and want to run it instantly without keeping a terminal dev server open:
+1. **Windows 1-Click:** Double-click [`start-pianolodo.bat`](./start-pianolodo.bat) in the root folder. It serves the optimized production build and immediately opens your browser at `http://localhost:4173`.
+2. **Terminal Production Command:** Run `npm start` or `npm run preview`.
+
+---
+
 ## 🌟 Key Architecture & Capabilities
 
 ### 1. 🪄 Interactive Chord Token List & 2-5-1 Cadence Workbench
