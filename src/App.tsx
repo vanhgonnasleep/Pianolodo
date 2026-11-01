@@ -19,7 +19,6 @@ import { t } from './i18n/translations';
 import { ClarionSidebar, NavTabId } from './components/ClarionSidebar';
 import { ClarionTopNav } from './components/ClarionTopNav';
 import { ProgressionControlBar } from './components/ProgressionControlBar';
-import { AiProgressionSuggester } from './components/AiProgressionSuggester';
 import { ChordTimeline } from './components/ChordTimeline';
 import { Piano88Keyboard } from './components/Piano88Keyboard';
 import { NotationAndNotesPanel } from './components/NotationAndNotesPanel';
@@ -29,6 +28,7 @@ import { CurriculumView } from './components/CurriculumView';
 import { PresetsView } from './components/PresetsView';
 import { FocusMusicView } from './components/FocusMusicView';
 import { MidiSettingsView } from './components/MidiSettingsView';
+import { useHoverPreview } from './hooks/useHoverPreview';
 import { ShieldCheck, Command } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -52,6 +52,16 @@ export const App: React.FC = () => {
   // Modals
   const [isCurriculumDrawerOpen, setIsCurriculumDrawerOpen] = useState<boolean>(false);
   const [isFocusModalOpen, setIsFocusModalOpen] = useState<boolean>(false);
+
+  // Hover Preview & Live Audition State
+  const {
+    previewState,
+    hoverScrubEnabled,
+    startHover,
+    endHover,
+    setAuditionPreview,
+    toggleHoverScrub,
+  } = useHoverPreview();
 
   // Computed Progression State
   const [customState, setCustomState] = useState<ReturnType<typeof buildProgressionState> | null>(null);
@@ -243,12 +253,15 @@ export const App: React.FC = () => {
           if (ch) pianoAudioEngine.playVoicedChord(ch, 'block');
           return next;
         });
+      } else if (e.code === 'KeyH') {
+        e.preventDefault();
+        toggleHoverScrub();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, handleStop, handlePlayReharmonized, progressionState.reharmonizedChords]);
+  }, [isPlaying, handleStop, handlePlayReharmonized, progressionState.reharmonizedChords, toggleHoverScrub]);
 
   const activeChord = progressionState.reharmonizedChords[activeChordIndex] || null;
   const progressionChordsStr = progressionState.reharmonizedChords.map((c) => c.symbol).join(' - ');
@@ -307,87 +320,50 @@ export const App: React.FC = () => {
         <main className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
           {/* TAB 1: STUDIO */}
           {activeTab === 'studio' && (
-            <div className="space-y-6">
-              {/* Executive Hero Banner (Overview Start) */}
-              <div className="p-6 md:p-8 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] relative overflow-hidden shadow-sm">
-                <div className="flex items-center justify-between gap-6">
-                  <div className="space-y-2 relative pl-14">
-                    {/* Audio wave marks */}
-                    <span
-                      className="absolute left-0 top-1 h-12 flex items-center gap-1 text-[#D97706]"
-                      aria-hidden="true"
-                    >
-                      <i className="w-1 bg-current rounded-full wave-bar-1 block" />
-                      <i className="w-1 bg-current rounded-full wave-bar-2 block" />
-                      <i className="w-1 bg-current rounded-full wave-bar-3 block" />
-                      <i className="w-1 bg-current rounded-full wave-bar-4 block" />
-                    </span>
-
-                    <h2 className="text-xl md:text-2xl font-extrabold text-[#1C1917] tracking-tight">
-                      {lang === 'vi'
-                        ? 'Pianolodo • Trợ Lý Hòa Thanh Piano AI & Voicing Studio'
-                        : 'Pianolodo • Piano Harmony AI & Voicing Studio'}
-                    </h2>
-                    <p className="text-xs md:text-sm text-[#78716C] max-w-2xl leading-relaxed">
-                      {lang === 'vi'
-                        ? 'Lõi giải thuật Voice-Leading thông minh, tách tay trái/phải công thái học, hợp âm bắc cầu và nhạc nền tập trung chuyên sâu.'
-                        : 'Deterministic voice-leading solver, ergonomic split-hand voicings, passing bridge chords, and zero-vocal deep focus soundscapes.'}
+            <div className="space-y-5">
+              {/* Compact Editorial Studio Header Strip */}
+              <div className="p-3 md:p-4 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] shadow-xs flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="w-8 h-8 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] font-bold text-sm shadow-xs font-serif">
+                    88
+                  </span>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-sm md:text-base font-bold text-[#1C1917] tracking-tight font-serif">
+                        Pianolodo Studio
+                      </h2>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
+                        Tone {keyRoot}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#10B981] border border-[#E5DFD7]">
+                        {avgSmoothness}% {lang === 'vi' ? 'Độ mượt' : 'Smoothness'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#78716C] hidden sm:block">
+                      {vibeName} • {progressionState.reharmonizedChords.length} {lang === 'vi' ? 'hợp âm' : 'chords'} • Deterministic Voice-Leading
                     </p>
-                  </div>
-
-                  <div className="hidden lg:flex flex-col items-end gap-1.5">
-                    <div className="flex items-center gap-2 bg-[#FAF8F5] px-3.5 py-1.5 rounded-xl border border-[#E5DFD7] text-xs font-mono text-[#065F46] font-semibold">
-                      <ShieldCheck className="w-4 h-4 text-[#10B981]" />
-                      <span>100% On-Device • Zero Latency</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[11px] text-[#A8A29E] font-medium">
-                      <Command className="w-3.5 h-3.5" />
-                      <span>{t('shortcutsHint', lang)}</span>
-                    </div>
                   </div>
                 </div>
 
-                {/* 4 Executive Metric Tiles */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-[#F5F1EB]">
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
-                      {lang === 'vi' ? 'Số Hợp Âm' : 'Chords Count'}
+                <div className="flex items-center gap-2">
+                  <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-[#78716C] bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DFD7]">
+                    <Command className="w-3.5 h-3.5 text-[#D97706]" />
+                    <span>
+                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">Space</kbd> Play ·{' '}
+                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">←</kbd>
+                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">→</kbd> Step ·{' '}
+                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">H</kbd> Scrub
                     </span>
-                    <div className="text-2xl font-extrabold font-mono text-[#1C1917]">
-                      {progressionState.reharmonizedChords.length}
-                    </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
-                      {lang === 'vi' ? 'Độ Mượt Giọng' : 'Smoothness Score'}
-                    </span>
-                    <div className="text-2xl font-extrabold font-mono text-[#10B981]">
-                      {avgSmoothness}%
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
-                      {lang === 'vi' ? 'Giọng Chủ' : 'Key Root'}
-                    </span>
-                    <div className="text-2xl font-extrabold font-mono text-[#D97706]">
-                      Tone {keyRoot}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <span className="text-[11px] font-semibold text-[#78716C] uppercase tracking-wider">
-                      {lang === 'vi' ? 'Phong Cách' : 'Active Vibe'}
-                    </span>
-                    <div className="text-base font-extrabold text-[#1C1917] truncate">
-                      {vibeName}
-                    </div>
+                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DFD7] text-[11px] font-mono text-[#065F46] font-semibold">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                    <span>On-Device</span>
                   </div>
                 </div>
               </div>
 
-              {/* Progression Control & Formulation Bar */}
+              {/* Progression Control & Unified Harmonic Assistant Workbench */}
               <ProgressionControlBar
                 rawInput={rawInput}
                 onInputChange={handleInputChange}
@@ -405,17 +381,16 @@ export const App: React.FC = () => {
                 onOpenFocusMusic={() => setIsFocusModalOpen(true)}
                 lang={lang}
                 onToggleLang={setLang}
+                progressionOptions={progressionOptions}
+                onSelectProgressionOption={handleSelectProgressionOption}
+                onHoverChord={startHover}
+                onLeaveHover={endHover}
+                onAuditionChord={setAuditionPreview}
+                hoverScrubEnabled={hoverScrubEnabled}
+                onToggleHoverScrub={toggleHoverScrub}
               />
 
-              {/* AI Progression Options Suggester */}
-              <AiProgressionSuggester
-                options={progressionOptions}
-                onSelectOption={handleSelectProgressionOption}
-                lang={lang}
-                currentRawInput={rawInput}
-              />
-
-              {/* Interactive Chord Timeline */}
+              {/* Interactive Chord Timeline with Live Hover Preview */}
               <ChordTimeline
                 originalChords={progressionState.originalChords}
                 reharmonizedChords={progressionState.reharmonizedChords}
@@ -435,10 +410,17 @@ export const App: React.FC = () => {
                 keyRoot={keyRoot}
                 vibe={vibe}
                 lang={lang}
+                onHoverChord={startHover}
+                onLeaveHover={endHover}
               />
 
-              {/* 88-Key Split-Hand Piano Keyboard */}
-              <Piano88Keyboard activeChord={activeChord} lang={lang} />
+              {/* 88-Key Split-Hand Piano Keyboard with Ghost Voicing & Voice-Leading Arcs */}
+              <Piano88Keyboard
+                activeChord={activeChord}
+                previewChord={previewState?.chord}
+                previewSource={previewState?.source}
+                lang={lang}
+              />
 
               {/* Notation & Literal Notes Panel */}
               <NotationAndNotesPanel activeChord={activeChord} lang={lang} />

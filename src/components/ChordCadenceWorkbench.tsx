@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import { CadenceOption, Language } from '../types/harmony';
+import React, { useState, useMemo } from 'react';
+import { CadenceOption, Language, VoicedChord } from '../types/harmony';
 import {
   generateCadenceOptions,
   splitInputTokens,
   joinInputTokens,
 } from '../engine/cadenceGenerator';
+import { buildProgressionState } from '../engine/reharmonizer';
 import { pianoAudioEngine } from '../audio/pianoAudioEngine';
+import { MiniPianoPopover } from './MiniPianoPopover';
 import {
-  Sparkles,
   Play,
   Square,
   Plus,
@@ -25,6 +26,9 @@ interface ChordCadenceWorkbenchProps {
   onInputChange: (newInput: string) => void;
   keyRoot: string;
   lang: Language;
+  onHoverChord?: (chord: VoicedChord, multiChords?: VoicedChord[], label?: string) => void;
+  onLeaveHover?: () => void;
+  onAuditionChord?: (chord: VoicedChord | null, multiChords?: VoicedChord[]) => void;
 }
 
 export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
@@ -32,6 +36,9 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
   onInputChange,
   keyRoot,
   lang,
+  onHoverChord,
+  onLeaveHover,
+  onAuditionChord,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [selectedChordIndex, setSelectedChordIndex] = useState<number>(0);
@@ -39,17 +46,41 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
   const [undoHistory, setUndoHistory] = useState<string[]>([]);
   const [auditioningId, setAuditioningId] = useState<string | null>(null);
 
+  // Local state for tracking hover popovers
+  const [hoveredTokenIdx, setHoveredTokenIdx] = useState<number | null>(null);
+  const [hoveredCadenceId, setHoveredCadenceId] = useState<string | null>(null);
+
   const tokens = splitInputTokens(rawInput);
   const safeIndex =
     tokens.length > 0 ? Math.max(0, Math.min(selectedChordIndex, tokens.length - 1)) : 0;
   const activeTargetToken = tokens[safeIndex] || '1';
 
+  // Compute voiced chords for each input token for instant previewing
+  const tokenVoicedMap = useMemo(() => {
+    const map = new Map<number, VoicedChord>();
+    tokens.forEach((t, i) => {
+      try {
+        const state = buildProgressionState(t, 'pop-ballad', 1, keyRoot);
+        if (state.reharmonizedChords[0]) {
+          map.set(i, state.reharmonizedChords[0]);
+        }
+      } catch {
+        // Fallback gracefully
+      }
+    });
+    return map;
+  }, [tokens, keyRoot]);
+
   // Compute cadence options for current target index
-  const cadenceOptions = generateCadenceOptions(rawInput, safeIndex, keyRoot);
+  const cadenceOptions = useMemo(
+    () => generateCadenceOptions(rawInput, safeIndex, keyRoot),
+    [rawInput, safeIndex, keyRoot]
+  );
 
   const handleApplyAction = (newFormula: string) => {
     pianoAudioEngine.stopPlayback();
     setAuditioningId(null);
+    onAuditionChord?.(null);
     setUndoHistory((prev) => [...prev, rawInput]);
     onInputChange(newFormula);
   };
@@ -86,23 +117,31 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
     if (auditioningId === opt.id) {
       pianoAudioEngine.stopPlayback();
       setAuditioningId(null);
+      onAuditionChord?.(null);
       return;
     }
 
     setAuditioningId(opt.id);
+    onAuditionChord?.(opt.previewChords[0], opt.previewChords);
+
     pianoAudioEngine.playProgression(
       opt.previewChords,
       'ballad-arpeggio',
       85,
-      () => {},
+      (idx) => {
+        if (opt.previewChords[idx]) {
+          onAuditionChord?.(opt.previewChords[idx], opt.previewChords);
+        }
+      },
       () => {
         setAuditioningId(null);
+        onAuditionChord?.(null);
       }
     );
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
+    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl shadow-sm overflow-visible transition-all duration-200">
       {/* Workbench Header */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -114,21 +153,21 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-xs md:text-sm font-extrabold text-[#1C1917] tracking-tight flex items-center gap-1.5">
+              <h3 className="text-xs md:text-sm font-bold text-[#1C1917] tracking-tight flex items-center gap-1.5 font-serif">
                 <span>
                   {lang === 'vi'
                     ? 'Liệt Kê Hợp Âm & Áp Dụng 2-5-1 / Hòa Thanh Vào Input'
                     : 'Interactive Chord List & Apply 2-5-1 Cadences to Input'}
                 </span>
               </h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#E0E7FF] text-[#3730A3] border border-[#C7D2FE]">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#92400E] border border-[#FDE68A]">
                 {tokens.length} {lang === 'vi' ? 'Hợp âm' : 'Chords'}
               </span>
             </div>
             <p className="text-[11px] text-[#78716C] mt-0.5 hidden sm:block">
               {lang === 'vi'
-                ? 'Bấm chọn hợp âm bất kỳ để tính toán và chèn các vòng 2-5-1, Tritone Sub, Backdoor trực tiếp vào input của bạn.'
-                : 'Click any chord to compute and inject 2-5-1, Tritone Sub, and Backdoor cadences directly into your input.'}
+                ? 'Rê chuột để xem trước thế bấm; bấm chọn hợp âm bất kỳ để tính toán và chèn các vòng 2-5-1, Tritone Sub, Backdoor.'
+                : 'Hover to preview voicings; click any chord to compute and inject 2-5-1, Tritone Sub, and Backdoor cadences.'}
             </p>
           </div>
         </div>
@@ -141,7 +180,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                 e.stopPropagation();
                 handleUndo();
               }}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#B45309] border border-[#FDE68A] transition shadow-xs"
+              className="pressable flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#B45309] border border-[#FDE68A] shadow-xs"
               title={lang === 'vi' ? 'Hoàn tác thay đổi vừa áp dụng' : 'Undo last applied change'}
             >
               <Undo2 className="w-3.5 h-3.5" />
@@ -151,7 +190,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
 
           <button
             type="button"
-            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] transition shadow-xs"
+            className="pressable flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] shadow-xs"
           >
             {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
           </button>
@@ -168,11 +207,11 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                 <Target className="w-3.5 h-3.5 text-[#D97706]" />
                 <span>
                   {lang === 'vi'
-                    ? '1. Danh sách hợp âm trong Input (Click để chọn đích dẫn lối):'
-                    : '1. Input Chords List (Click to select target destination):'}
+                    ? '1. Danh sách hợp âm trong Input (Click để chọn đích dẫn lối, Rê chuột để soi phím):'
+                    : '1. Input Chords List (Click to select target destination, Hover to preview):'}
                 </span>
               </span>
-              <span className="text-[11px] font-medium text-[#A8A29E]">
+              <span className="text-[11px] font-medium text-[#78716C]">
                 {lang === 'vi' ? 'Đích hiện tại:' : 'Active Target:'}{' '}
                 <strong className="text-[#D97706] font-mono">[{activeTargetToken}]</strong>
               </span>
@@ -181,11 +220,24 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
             <div className="flex flex-wrap items-center gap-2">
               {tokens.map((token, idx) => {
                 const isSelected = idx === safeIndex;
+                const voiced = tokenVoicedMap.get(idx);
+                const isHovered = hoveredTokenIdx === idx;
+
                 return (
                   <div
                     key={`${token}-${idx}`}
                     onClick={() => setSelectedChordIndex(idx)}
-                    className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border cursor-pointer select-none transition ${
+                    onMouseEnter={() => {
+                      setHoveredTokenIdx(idx);
+                      if (voiced) {
+                        onHoverChord?.(voiced, undefined, token);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredTokenIdx(null);
+                      onLeaveHover?.();
+                    }}
+                    className={`pressable group relative flex items-center gap-1.5 px-3 py-1.5 rounded-xl border cursor-pointer select-none transition ${
                       isSelected
                         ? 'bg-[#FEF3C7] border-[#D97706] text-[#92400E] shadow-xs ring-2 ring-[#D97706]/30 font-bold'
                         : 'bg-[#FAF8F5] border-[#E5DFD7] text-[#1C1917] hover:border-[#D1C8BD]'
@@ -197,6 +249,11 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                     <span className="text-xs md:text-sm font-extrabold font-mono tracking-wide">
                       {token}
                     </span>
+
+                    {/* Mini Piano Hover Popover */}
+                    {isHovered && voiced && (
+                      <MiniPianoPopover chord={voiced} align="top" className="left-0" />
+                    )}
 
                     {/* Remove button */}
                     {tokens.length > 1 && (
@@ -228,7 +285,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                 <button
                   type="submit"
                   disabled={!newChordText.trim()}
-                  className="px-2.5 py-1.2 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] disabled:opacity-40 text-xs font-bold text-[#1C1917] border border-[#E5DFD7] flex items-center gap-1 transition"
+                  className="pressable px-2.5 py-1.2 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] disabled:opacity-40 text-xs font-bold text-[#1C1917] border border-[#E5DFD7] flex items-center gap-1 transition"
                 >
                   <Plus className="w-3 h-3 text-[#D97706]" />
                   <span>{lang === 'vi' ? 'Thêm' : 'Add'}</span>
@@ -241,7 +298,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+                <Wand2 className="w-3.5 h-3.5 text-[#D97706]" />
                 <span>
                   {lang === 'vi'
                     ? `2. Các Phương Án 2-5-1 & Hòa Thanh Dẫn Về [ ${activeTargetToken} ]:`
@@ -256,6 +313,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {cadenceOptions.map((opt) => {
                 const isAuditioning = auditioningId === opt.id;
+                const isHovered = hoveredCadenceId === opt.id;
                 const title = lang === 'vi' ? opt.titleVi : opt.titleEn;
                 const badge = lang === 'vi' ? opt.badgeVi : opt.badgeEn;
                 const rationale = lang === 'vi' ? opt.rationaleVi : opt.rationaleEn;
@@ -263,19 +321,39 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                 return (
                   <div
                     key={opt.id}
-                    className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] hover:border-[#D97706]/40 shadow-xs flex flex-col justify-between gap-3 transition"
+                    onMouseEnter={() => {
+                      setHoveredCadenceId(opt.id);
+                      if (opt.previewChords[0]) {
+                        onHoverChord?.(opt.previewChords[0], opt.previewChords, title);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredCadenceId(null);
+                      onLeaveHover?.();
+                    }}
+                    className="relative p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] hover:border-[#D97706]/40 shadow-xs flex flex-col justify-between gap-3 transition"
                   >
+                    {/* Hover Multi-Chord Popover */}
+                    {isHovered && opt.previewChords[0] && (
+                      <MiniPianoPopover
+                        chord={opt.previewChords[0]}
+                        multiChords={opt.previewChords}
+                        align="top"
+                        className="left-0"
+                      />
+                    )}
+
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                           {badge}
                         </span>
-                        <span className="text-[10px] font-medium text-[#A8A29E] font-mono">
+                        <span className="text-[10px] font-medium text-[#78716C] font-mono">
                           {opt.insertedFormula}
                         </span>
                       </div>
 
-                      <h4 className="text-xs font-bold text-[#1C1917] leading-snug line-clamp-1">
+                      <h4 className="text-xs font-bold text-[#1C1917] leading-snug line-clamp-1 font-serif">
                         {title}
                       </h4>
 
@@ -299,7 +377,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                       <button
                         type="button"
                         onClick={() => handleAudition(opt)}
-                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                        className={`pressable flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition ${
                           isAuditioning
                             ? 'bg-[#DC2626] text-white border-[#DC2626]'
                             : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#1C1917] border-[#E5DFD7]'
@@ -323,7 +401,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                       <button
                         type="button"
                         onClick={() => handleApplyAction(opt.resultingFormula)}
-                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold shadow-xs transition"
+                        className="pressable flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold shadow-xs transition"
                       >
                         <span>
                           {opt.actionType === 'insert-before'

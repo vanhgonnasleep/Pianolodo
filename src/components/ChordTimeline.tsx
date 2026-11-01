@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BridgeCandidate, GroovePatternId, Language, VibeId, VoicedChord } from '../types/harmony';
 import { getBridgeCandidates } from '../engine/bridgeSuggester';
 import { t } from '../i18n/translations';
+import { MiniPianoPopover } from './MiniPianoPopover';
 import { Play, Square, Plus, ShieldCheck, Sparkles, X } from 'lucide-react';
 
 interface ChordTimelineProps {
@@ -23,6 +24,8 @@ interface ChordTimelineProps {
   keyRoot: string;
   vibe: VibeId;
   lang: Language;
+  onHoverChord?: (chord: VoicedChord, multiChords?: VoicedChord[], label?: string) => void;
+  onLeaveHover?: () => void;
 }
 
 export const ChordTimeline: React.FC<ChordTimelineProps> = ({
@@ -44,8 +47,11 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
   keyRoot,
   vibe,
   lang,
+  onHoverChord,
+  onLeaveHover,
 }) => {
   const [selectedBridgeSlot, setSelectedBridgeSlot] = useState<number | null>(null);
+  const [hoveredTimelineIdx, setHoveredTimelineIdx] = useState<number | null>(null);
 
   const openBridgeModal = (idx: number) => {
     setSelectedBridgeSlot(idx);
@@ -53,6 +59,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
 
   const closeBridgeModal = () => {
     setSelectedBridgeSlot(null);
+    onLeaveHover?.();
   };
 
   const bridgeCandidates: BridgeCandidate[] =
@@ -66,7 +73,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
       : [];
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl p-4 md:p-6 shadow-sm space-y-4">
+    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl p-4 md:p-6 shadow-sm space-y-4 overflow-visible">
       {/* Top playback row */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F1EB] pb-3">
         {/* Playback A/B Buttons */}
@@ -74,7 +81,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
           {isPlaying ? (
             <button
               onClick={onStop}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs md:text-sm shadow-md shadow-rose-600/20 transition"
+              className="pressable flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs md:text-sm shadow-md shadow-rose-600/20 transition"
             >
               <Square className="w-4 h-4 fill-current" />
               {t('stopPlayback', lang)}
@@ -83,14 +90,14 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
             <>
               <button
                 onClick={onPlayOriginal}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] text-xs md:text-sm font-semibold transition"
+                className="pressable flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] text-xs md:text-sm font-semibold transition"
               >
                 <Play className="w-3.5 h-3.5 text-[#78716C]" />
                 {t('playOriginal', lang)}
               </button>
               <button
                 onClick={onPlayReharmonized}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#F59E0B] hover:to-[#D97706] text-white font-bold text-xs md:text-sm shadow-md shadow-[#D97706]/20 transition"
+                className="pressable flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#F59E0B] hover:to-[#D97706] text-white font-bold text-xs md:text-sm shadow-md shadow-[#D97706]/20 transition"
               >
                 <Sparkles className="w-4 h-4 fill-white" />
                 {t('playReharmonized', lang)}
@@ -139,19 +146,28 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
       </div>
 
       {/* Chord Timeline Sequence */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-thin pt-1">
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 scrollbar-thin pt-1">
         {reharmonizedChords.map((chord, idx) => {
           const isActive = activeChordIndex === idx;
           const isChordPlaying = isPlaying && playingIndex === idx;
           const isBridge = chord.functionRole === 'passing-bridge';
           const original = originalChords[idx]?.symbol || chord.originalSymbol || '';
+          const isHovered = hoveredTimelineIdx === idx;
 
           return (
             <React.Fragment key={chord.id || idx}>
               {/* Chord Card */}
               <div
                 onClick={() => onSelectChord(idx)}
-                className={`relative flex-shrink-0 cursor-pointer rounded-2xl p-3 md:p-4 border transition-all duration-200 select-none min-w-[120px] md:min-w-[140px] ${
+                onMouseEnter={() => {
+                  setHoveredTimelineIdx(idx);
+                  onHoverChord?.(chord, undefined, chord.symbol);
+                }}
+                onMouseLeave={() => {
+                  setHoveredTimelineIdx(null);
+                  onLeaveHover?.();
+                }}
+                className={`pressable relative flex-shrink-0 cursor-pointer rounded-2xl p-3 md:p-4 border transition-all duration-200 select-none min-w-[120px] md:min-w-[140px] ${
                   isChordPlaying
                     ? 'ring-2 ring-[#D97706] bg-[#FEF3C7] border-[#D97706] shadow-md'
                     : isActive
@@ -159,6 +175,11 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
                     : 'bg-[#FAF8F5] border-[#E5DFD7] hover:border-[#D1C8BD] text-[#1C1917]'
                 }`}
               >
+                {/* Hover Mini-Piano Popover */}
+                {isHovered && !isActive && (
+                  <MiniPianoPopover chord={chord} align="top" className="left-0" />
+                )}
+
                 {/* Header: Roman degree + Badge */}
                 <div className="flex items-center justify-between gap-1 mb-1.5">
                   <span className="text-xs font-mono font-bold text-[#D97706]">
@@ -172,13 +193,13 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
                 </div>
 
                 {/* Main Chord Symbol */}
-                <div className="text-lg md:text-xl font-extrabold text-[#1C1917] tracking-tight">
+                <div className="text-lg md:text-xl font-extrabold text-[#1C1917] tracking-tight font-serif">
                   {chord.symbol}
                 </div>
 
                 {/* Original comparison */}
                 {original && original !== chord.symbol && (
-                  <div className="text-[11px] text-[#A8A29E] line-through">
+                  <div className="text-[11px] text-[#A8A29E] line-through font-mono">
                     {t('originalComparison', lang)}: {original}
                   </div>
                 )}
@@ -200,7 +221,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
                 <button
                   onClick={() => openBridgeModal(idx)}
                   title={t('bridgeTooltip', lang)}
-                  className="flex-shrink-0 w-7 h-7 rounded-full bg-[#FAF8F5] hover:bg-[#FEF3C7] hover:text-[#B45309] hover:border-[#D97706] text-[#78716C] border border-[#E5DFD7] flex items-center justify-center transition shadow-xs hover:scale-110"
+                  className="pressable flex-shrink-0 w-7 h-7 rounded-full bg-[#FAF8F5] hover:bg-[#FEF3C7] hover:text-[#B45309] hover:border-[#D97706] text-[#78716C] border border-[#E5DFD7] flex items-center justify-center transition shadow-xs"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>
@@ -210,73 +231,82 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
         })}
       </div>
 
-      {/* Modal / Popover: Bridge Candidates Picker */}
+      {/* Origin-Aware Popover: Bridge Candidates Picker */}
       {selectedBridgeSlot !== null && (
-        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#F5F1EB] pb-3">
-              <div>
-                <h3 className="text-base font-bold text-[#1C1917] flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-[#D97706]" />
-                  {t('bridgeModalTitle', lang)}
-                </h3>
-                <p className="text-xs text-[#78716C]">
-                  {t('bridgeModalDesc', lang)}:{' '}
-                  <span className="text-[#D97706] font-bold">
-                    {reharmonizedChords[selectedBridgeSlot]?.symbol}
-                  </span>{' '}
-                  &rarr;{' '}
-                  <span className="text-[#D97706] font-bold">
-                    {reharmonizedChords[selectedBridgeSlot + 1]?.symbol}
-                  </span>
-                </p>
-              </div>
-              <button
-                onClick={closeBridgeModal}
-                className="p-1 rounded-lg text-[#78716C] hover:text-[#1C1917] hover:bg-[#FAF8F5]"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="p-4 md:p-5 rounded-2xl bg-[#FAF8F5] border border-[#D97706]/40 shadow-md space-y-4 popover-spring">
+          <div className="flex items-center justify-between border-b border-[#E5DFD7] pb-3">
+            <div>
+              <h3 className="text-sm md:text-base font-bold text-[#1C1917] flex items-center gap-2 font-serif">
+                <Sparkles className="w-4 h-4 text-[#D97706]" />
+                {t('bridgeModalTitle', lang)}
+              </h3>
+              <p className="text-xs text-[#78716C]">
+                {t('bridgeModalDesc', lang)}:{' '}
+                <span className="text-[#D97706] font-bold font-mono">
+                  {reharmonizedChords[selectedBridgeSlot]?.symbol}
+                </span>{' '}
+                &rarr;{' '}
+                <span className="text-[#D97706] font-bold font-mono">
+                  {reharmonizedChords[selectedBridgeSlot + 1]?.symbol}
+                </span>{' '}
+                <span className="text-[11px] text-[#A8A29E] hidden sm:inline">
+                  (Rê chuột vào ứng viên để soi phím đàn bên dưới)
+                </span>
+              </p>
             </div>
+            <button
+              onClick={closeBridgeModal}
+              className="pressable p-1 rounded-lg text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1]"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
-              {bridgeCandidates.map((cand) => (
-                <div
-                  key={cand.id}
-                  className="p-3.5 rounded-xl bg-[#FAF8F5] border border-[#E5DFD7] hover:border-[#D97706] transition flex flex-col gap-2"
-                >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1">
+            {bridgeCandidates.map((cand) => (
+              <div
+                key={cand.id}
+                onMouseEnter={() => {
+                  onHoverChord?.(cand.previewChord, undefined, cand.symbol);
+                }}
+                onMouseLeave={() => {
+                  onLeaveHover?.();
+                }}
+                className="p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] hover:border-[#D97706] shadow-xs transition flex flex-col justify-between gap-2"
+              >
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-extrabold text-[#D97706]">
+                      <span className="text-base font-extrabold text-[#D97706] font-serif">
                         {cand.symbol}
                       </span>
                       <span className="text-xs font-mono font-semibold text-[#78716C]">
                         ({cand.romanDegree})
                       </span>
                     </div>
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                       {lang === 'vi' ? cand.techniqueName : cand.techniqueNameEn}
                     </span>
                   </div>
 
-                  <p className="text-xs text-[#57534E] leading-relaxed">
+                  <p className="text-xs text-[#57534E] leading-relaxed line-clamp-2">
                     {lang === 'vi' ? cand.whySmooth : cand.whySmoothEn}
                   </p>
-
-                  <div className="flex justify-end pt-1">
-                    <button
-                      onClick={() => {
-                        onInsertBridge(selectedBridgeSlot, cand);
-                        closeBridgeModal();
-                      }}
-                      className="px-3.5 py-1.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold transition shadow-xs"
-                    >
-                      {t('insertBridgeBtn', lang)}
-                    </button>
-                  </div>
                 </div>
-              ))}
-            </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    onClick={() => {
+                      onInsertBridge(selectedBridgeSlot, cand);
+                      closeBridgeModal();
+                    }}
+                    className="pressable px-3 py-1.5 rounded-lg bg-[#D97706] hover:bg-[#B45309] text-white text-xs font-bold transition shadow-xs"
+                  >
+                    {t('insertBridgeBtn', lang)}
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

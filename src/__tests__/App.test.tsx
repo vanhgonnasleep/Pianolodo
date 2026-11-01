@@ -58,6 +58,8 @@ describe('Piano Harmony Coach UI Integration', () => {
 
   it('renders AI Progression Options Suggester and allows applying an option', () => {
     render(<App />);
+    const aiTabBtn = screen.getByRole('button', { name: /AI 5 Phong Cách/i });
+    fireEvent.click(aiTabBtn);
     expect(screen.getByText(/AI Đề Xuất Các Phương Án Hòa Thanh/i)).toBeTruthy();
     const applyBtns = screen.getAllByRole('button', { name: /Áp Dụng/i });
     expect(applyBtns.length).toBeGreaterThanOrEqual(1);

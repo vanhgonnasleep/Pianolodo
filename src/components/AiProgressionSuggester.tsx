@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { Language, ProgressionOption } from '../types/harmony';
+import { Language, ProgressionOption, VoicedChord } from '../types/harmony';
 import { Sparkles, Play, Square, Check, ChevronDown, ChevronUp, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
 import { pianoAudioEngine } from '../audio/pianoAudioEngine';
+import { MiniPianoPopover } from './MiniPianoPopover';
 
 interface AiProgressionSuggesterProps {
   options: ProgressionOption[];
   onSelectOption: (option: ProgressionOption) => void;
   lang: Language;
   currentRawInput: string;
+  onHoverChord?: (chord: VoicedChord, multiChords?: VoicedChord[], label?: string) => void;
+  onLeaveHover?: () => void;
+  onAuditionChord?: (chord: VoicedChord | null, multiChords?: VoicedChord[]) => void;
 }
 
 export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
@@ -15,9 +19,13 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
   onSelectOption,
   lang,
   currentRawInput,
+  onHoverChord,
+  onLeaveHover,
+  onAuditionChord,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [auditioningId, setAuditioningId] = useState<string | null>(null);
+  const [hoveredOptId, setHoveredOptId] = useState<string | null>(null);
 
   if (!options || options.length === 0) return null;
 
@@ -25,17 +33,28 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
     if (auditioningId === opt.id) {
       pianoAudioEngine.stopPlayback();
       setAuditioningId(null);
+      onAuditionChord?.(null);
       return;
     }
 
     setAuditioningId(opt.id);
+    const chords = opt.progressionState.reharmonizedChords;
+    if (chords[0]) {
+      onAuditionChord?.(chords[0], chords);
+    }
+
     pianoAudioEngine.playProgression(
-      opt.progressionState.reharmonizedChords,
+      chords,
       'ballad-arpeggio',
       85,
-      () => {},
+      (idx) => {
+        if (chords[idx]) {
+          onAuditionChord?.(chords[idx], chords);
+        }
+      },
       () => {
         setAuditioningId(null);
+        onAuditionChord?.(null);
       }
     );
   };
@@ -43,11 +62,12 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
   const handleApply = (opt: ProgressionOption) => {
     pianoAudioEngine.stopPlayback();
     setAuditioningId(null);
+    onAuditionChord?.(null);
     onSelectOption(opt);
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl shadow-sm overflow-hidden transition-all duration-200">
+    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl shadow-sm overflow-visible transition-all duration-200">
       {/* Header Banner */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -59,10 +79,10 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm md:text-base font-extrabold text-[#1C1917] tracking-tight">
+              <h3 className="text-sm md:text-base font-bold text-[#1C1917] tracking-tight font-serif">
                 {lang === 'vi'
-                  ? '✨ AI Đề Xuất Các Phương Án Hòa Thanh (AI Progression Options)'
-                  : '✨ AI Harmonic Reharmonization & Progression Options'}
+                  ? 'AI Đề Xuất Các Phương Án Hòa Thanh (AI Progression Options)'
+                  : 'AI Harmonic Reharmonization & Progression Options'}
               </h3>
               <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                 {options.length} {lang === 'vi' ? 'Phương Án' : 'Options'}
@@ -70,15 +90,15 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
             </div>
             <p className="text-xs text-[#78716C] mt-0.5 hidden sm:block">
               {lang === 'vi'
-                ? 'Dựa trên chuỗi hợp âm bạn vừa nhập, AI tính toán sẵn các phương án reharmonize theo từng phong cách âm nhạc:'
-                : 'Based on your chord input, AI computed diverse reharmonizations across musical styles:'}
+                ? 'Rê chuột để soi phím đàn; AI tự động tính toán các phương án reharmonize theo từng phong cách âm nhạc:'
+                : 'Hover to preview voicings; AI computed diverse reharmonizations across musical styles:'}
             </p>
           </div>
         </div>
 
         <button
           type="button"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] transition shadow-xs"
+          className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] shadow-xs"
         >
           <span>{isExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Collapse') : (lang === 'vi' ? 'Mở rộng' : 'Expand')}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -92,69 +112,95 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
             {options.map((opt) => {
               const isAuditioning = auditioningId === opt.id;
               const isCurrentlyActive = currentRawInput.trim() === opt.formula.trim();
+              const isHovered = hoveredOptId === opt.id;
               const title = lang === 'vi' ? opt.titleVi : opt.titleEn;
               const badge = lang === 'vi' ? opt.badgeVi : opt.badgeEn;
               const rationale = lang === 'vi' ? opt.rationaleVi : opt.rationaleEn;
               const emotion = lang === 'vi' ? opt.emotionTagVi : opt.emotionTagEn;
+              const firstChord = opt.progressionState.reharmonizedChords[0];
 
               return (
                 <div
                   key={opt.id}
-                  className={`p-4 md:p-5 rounded-2xl border transition-all duration-200 flex flex-col justify-between space-y-3.5 shadow-xs ${
+                  onMouseEnter={() => {
+                    setHoveredOptId(opt.id);
+                    if (firstChord) {
+                      onHoverChord?.(firstChord, opt.progressionState.reharmonizedChords, title);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    setHoveredOptId(null);
+                    onLeaveHover?.();
+                  }}
+                  className={`relative rounded-2xl p-4 md:p-5 border transition-all duration-200 flex flex-col justify-between gap-4 ${
                     isCurrentlyActive
-                      ? 'bg-[#FEF3C7]/40 border-[#D97706] shadow-sm'
-                      : 'bg-[#FFFFFF] border-[#E5DFD7] hover:border-[#D1C8BD]'
+                      ? 'bg-[#FEF3C7] border-[#D97706] shadow-md ring-2 ring-[#D97706]/30'
+                      : 'bg-[#FFFFFF] border-[#E5DFD7] hover:border-[#D97706]/50 shadow-xs'
                   }`}
                 >
-                  <div className="space-y-3">
-                    {/* Top Row: Genre Badge + Smoothness Score */}
+                  {/* Hover Multi-Chord Popover */}
+                  {isHovered && firstChord && (
+                    <MiniPianoPopover
+                      chord={firstChord}
+                      multiChords={opt.progressionState.reharmonizedChords}
+                      align="top"
+                      className="left-0"
+                    />
+                  )}
+
+                  {/* Card Header: Style Badge + Smoothness */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] border border-[#E5DFD7] text-[#D97706]">
+                      <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
                         {badge}
                       </span>
-
-                      <div className="flex items-center gap-1 text-[11px] font-semibold text-[#10B981]">
+                      <div className="flex items-center gap-1 text-[11px] font-mono font-semibold text-[#10B981]">
                         <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>{opt.smoothnessScore}% {lang === 'vi' ? 'Mượt' : 'Smooth'}</span>
+                        <span>{opt.smoothnessScore}%</span>
                       </div>
                     </div>
 
-                    {/* Option Title */}
-                    <h4 className="text-sm font-bold text-[#1C1917] tracking-tight">
+                    <h4 className="text-sm font-bold text-[#1C1917] tracking-tight font-serif">
                       {title}
                     </h4>
 
-                    {/* Chord Flow Display */}
-                    <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#E5DFD7] font-mono text-xs font-bold text-[#D97706] tracking-wide break-words">
-                      {opt.chordsSummary}
+                    {/* Progression Summary Flow */}
+                    <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#F5F1EB] space-y-1">
+                      <div className="text-[10px] font-semibold text-[#78716C] uppercase tracking-wider">
+                        {lang === 'vi' ? 'Chuỗi Hợp Âm Thực Tế:' : 'Voiced Progression:'}
+                      </div>
+                      <div className="text-xs font-mono font-bold text-[#D97706] truncate">
+                        {opt.chordsSummary}
+                      </div>
+                      <div className="text-[11px] font-mono text-[#A8A29E]">
+                        ({opt.formula})
+                      </div>
                     </div>
 
-                    {/* Roman Degrees formula */}
-                    <div className="text-[11px] font-mono text-[#78716C] flex items-center justify-between">
-                      <span>Bậc / Degree: <strong className="text-[#1C1917]">{opt.formula}</strong></span>
-                      <span className="text-rose-600 flex items-center gap-1">
-                        <Heart className="w-3 h-3 fill-current" />
-                        <span>{emotion}</span>
-                      </span>
-                    </div>
-
-                    {/* Rationale explanation */}
+                    {/* Musical Rationale */}
                     <p className="text-xs text-[#57534E] leading-relaxed line-clamp-3">
                       {rationale}
                     </p>
+
+                    {/* Emotion Tag */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-[#78716C] font-medium pt-1">
+                      <Heart className="w-3 h-3 text-[#D97706]" />
+                      <span>{emotion}</span>
+                    </div>
                   </div>
 
-                  {/* Actions Footer */}
+                  {/* Actions Row */}
                   <div className="pt-3 border-t border-[#F5F1EB] flex items-center justify-between gap-2">
                     {/* Audition Button */}
                     <button
                       type="button"
                       onClick={() => handleAudition(opt)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
+                      className={`pressable flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition ${
                         isAuditioning
-                          ? 'bg-rose-600 text-white shadow-xs animate-pulse'
-                          : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#1C1917] border border-[#E5DFD7]'
+                          ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
+                          : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#1C1917] border-[#E5DFD7]'
                       }`}
+                      title={lang === 'vi' ? 'Nghe thử vòng hòa thanh' : 'Audition chord progression'}
                     >
                       {isAuditioning ? (
                         <>
@@ -163,8 +209,8 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                         </>
                       ) : (
                         <>
-                          <Play className="w-3.5 h-3.5 text-[#D97706]" />
-                          <span>{lang === 'vi' ? 'Nghe thử' : 'Audition'}</span>
+                          <Play className="w-3.5 h-3.5 fill-current text-[#D97706]" />
+                          <span>{lang === 'vi' ? 'Nghe' : 'Play'}</span>
                         </>
                       )}
                     </button>
@@ -172,22 +218,22 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                     {/* Apply Button */}
                     <button
                       type="button"
-                      onClick={() => handleApply(opt)}
                       disabled={isCurrentlyActive}
-                      className={`flex items-center gap-1 px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-xs ${
+                      onClick={() => handleApply(opt)}
+                      className={`pressable flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition shadow-xs ${
                         isCurrentlyActive
-                          ? 'bg-[#E5DFD7] text-[#78716C] cursor-default'
-                          : 'bg-[#D97706] hover:bg-[#B45309] text-white shadow-md shadow-[#D97706]/20'
+                          ? 'bg-[#10B981] text-white cursor-default'
+                          : 'bg-[#D97706] hover:bg-[#B45309] text-white'
                       }`}
                     >
                       {isCurrentlyActive ? (
                         <>
                           <Check className="w-3.5 h-3.5" />
-                          <span>{lang === 'vi' ? 'Đang chọn' : 'Active'}</span>
+                          <span>{lang === 'vi' ? 'Đang áp dụng' : 'Active in Studio'}</span>
                         </>
                       ) : (
                         <>
-                          <span>{lang === 'vi' ? 'Áp dụng' : 'Apply'}</span>
+                          <span>{lang === 'vi' ? 'Áp Dụng' : 'Apply to Studio'}</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </>
                       )}

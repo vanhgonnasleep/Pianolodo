@@ -187,3 +187,11 @@ export interface CadenceOption {
   actionType: 'insert-before' | 'replace-target' | 'append' | 'replace-all';
   previewChords: VoicedChord[];
 }
+
+export interface HoverPreviewState {
+  chord: VoicedChord | null;
+  multiChords?: VoicedChord[];
+  source: 'hover' | 'audition' | null;
+  label?: string;
+  targetIndex?: number;
+}
