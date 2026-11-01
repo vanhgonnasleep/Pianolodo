@@ -1,8 +1,28 @@
 {
-  "name": "piano-harmony-coach",
+  "name": "pianolodo",
+  "version": "2.0.0",
   "private": true,
-  "version": "1.0.0",
+  "description": "Pianolodo — Professional AI Piano Harmony Studio Cockpit, Voice-Leading Solver, and Interactive 2-5-1 Cadence Workbench.",
   "type": "module",
+  "author": "vanhgonnasleep",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vanhgonnasleep/Pianolodo.git"
+  },
+  "keywords": [
+    "piano",
+    "harmony",
+    "voice-leading",
+    "reharmonization",
+    "cadence-workbench",
+    "tonejs",
+    "vexflow",
+    "web-audio",
+    "web-midi",
+    "react19",
+    "typescript"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
