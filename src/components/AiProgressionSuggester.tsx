@@ -67,28 +67,28 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
   };
 
   return (
-    <div className="bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl shadow-sm overflow-visible transition-all duration-200">
+    <div className="bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] rounded-2xl shadow-sm overflow-visible transition-all duration-200">
       {/* Header Banner */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="p-4 md:p-5 flex items-center justify-between cursor-pointer select-none bg-gradient-to-r from-[#FAF8F5] to-[#FFFFFF] hover:bg-[#FAF8F5] transition border-b border-[#F5F1EB]"
+        className="p-4 md:p-5 flex items-center justify-between cursor-pointer select-none bg-gradient-to-r from-[#FAF8F5] to-[#FFFFFF] dark:from-[#161622] dark:to-[#121217] hover:bg-[#FAF8F5] dark:hover:bg-[#181826] transition border-b border-[#F5F1EB] dark:border-[#22222E]"
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[#FEF3C7] dark:bg-[#F59E0B]/15 border border-[#FDE68A] dark:border-[#F59E0B]/30 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] shadow-xs glow-amber">
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-sm md:text-base font-bold text-[#1C1917] tracking-tight font-serif">
+              <h3 className="text-sm md:text-base font-bold text-[#1C1917] dark:text-[#F4F4F6] tracking-tight font-serif">
                 {lang === 'vi'
                   ? 'AI Đề Xuất Các Phương Án Hòa Thanh (AI Progression Options)'
                   : 'AI Harmonic Reharmonization & Progression Options'}
               </h3>
-              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] border border-[#FDE68A] dark:border-[#F59E0B]/40">
                 {options.length} {lang === 'vi' ? 'Phương Án' : 'Options'}
               </span>
             </div>
-            <p className="text-xs text-[#78716C] mt-0.5 hidden sm:block">
+            <p className="text-xs text-[#78716C] dark:text-[#9494A6] mt-0.5 hidden sm:block">
               {lang === 'vi'
                 ? 'Rê chuột để soi phím đàn; AI tự động tính toán các phương án reharmonize theo từng phong cách âm nhạc:'
                 : 'Hover to preview voicings; AI computed diverse reharmonizations across musical styles:'}
@@ -98,7 +98,7 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
 
         <button
           type="button"
-          className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] shadow-xs"
+          className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#181824] hover:bg-[#F5F1EB] dark:hover:bg-[#202030] text-xs font-semibold text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#2E2E42] shadow-xs"
         >
           <span>{isExpanded ? (lang === 'vi' ? 'Thu gọn' : 'Collapse') : (lang === 'vi' ? 'Mở rộng' : 'Expand')}</span>
           {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -107,7 +107,7 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
 
       {/* Expandable Options Cards Grid */}
       {isExpanded && (
-        <div className="p-4 md:p-6 bg-[#FAF8F5] space-y-4">
+        <div className="p-4 md:p-6 bg-[#FAF8F5] dark:bg-[#0E0E14] space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {options.map((opt) => {
               const isAuditioning = auditioningId === opt.id;
@@ -134,8 +134,8 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                   }}
                   className={`relative rounded-2xl p-4 md:p-5 border transition-all duration-200 flex flex-col justify-between gap-4 ${
                     isCurrentlyActive
-                      ? 'bg-[#FEF3C7] border-[#D97706] shadow-md ring-2 ring-[#D97706]/30'
-                      : 'bg-[#FFFFFF] border-[#E5DFD7] hover:border-[#D97706]/50 shadow-xs'
+                      ? 'bg-[#FEF3C7] dark:bg-[#1E1B2A] border-[#D97706] dark:border-[#F59E0B] shadow-md ring-2 ring-[#D97706]/30 dark:ring-[#F59E0B]/40 glow-amber'
+                      : 'bg-[#FFFFFF] dark:bg-[#161622] border-[#E5DFD7] dark:border-[#272736] hover:border-[#D97706]/50 dark:hover:border-[#F59E0B]/50 shadow-xs'
                   }`}
                 >
                   {/* Hover Multi-Chord Popover */}
@@ -151,7 +151,7 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                   {/* Card Header: Style Badge + Smoothness */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
+                      <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#0C0C10] text-[#D97706] dark:text-[#F59E0B] border border-[#E5DFD7] dark:border-[#272736]">
                         {badge}
                       </span>
                       <div className="flex items-center gap-1 text-xs font-mono font-bold text-[#10B981]">
@@ -160,45 +160,45 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                       </div>
                     </div>
 
-                    <h4 className="text-base font-bold text-[#1C1917] tracking-tight font-serif">
+                    <h4 className="text-base font-bold text-[#1C1917] dark:text-[#F4F4F6] tracking-tight font-serif">
                       {title}
                     </h4>
 
                     {/* Progression Summary Flow */}
-                    <div className="p-2.5 rounded-xl bg-[#FAF8F5] border border-[#F5F1EB] space-y-1">
-                      <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+                    <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-[#0C0C10] border border-[#F5F1EB] dark:border-[#22222E] space-y-1">
+                      <div className="text-xs font-semibold text-[#78716C] dark:text-[#9494A6] uppercase tracking-wider">
                         {lang === 'vi' ? 'Chuỗi Hợp Âm Thực Tế:' : 'Voiced Progression:'}
                       </div>
-                      <div className="text-sm font-mono font-bold text-[#D97706] truncate">
+                      <div className="text-sm font-mono font-bold text-[#D97706] dark:text-[#F59E0B] truncate">
                         {opt.chordsSummary}
                       </div>
-                      <div className="text-xs font-mono text-[#A8A29E]">
+                      <div className="text-xs font-mono text-[#A8A29E] dark:text-[#71717A]">
                         ({opt.formula})
                       </div>
                     </div>
 
                     {/* Musical Rationale */}
-                    <p className="text-xs md:text-sm text-[#57534E] leading-relaxed line-clamp-3">
+                    <p className="text-xs md:text-sm text-[#57534E] dark:text-[#9494A6] leading-relaxed line-clamp-3">
                       {rationale}
                     </p>
 
                     {/* Emotion Tag */}
-                    <div className="flex items-center gap-1.5 text-xs text-[#78716C] font-medium pt-1">
-                      <Heart className="w-3.5 h-3.5 text-[#D97706]" />
+                    <div className="flex items-center gap-1.5 text-xs text-[#78716C] dark:text-[#9494A6] font-medium pt-1">
+                      <Heart className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
                       <span>{emotion}</span>
                     </div>
                   </div>
 
                   {/* Actions Row */}
-                  <div className="pt-3 border-t border-[#F5F1EB] flex items-center justify-between gap-2">
+                  <div className="pt-3 border-t border-[#F5F1EB] dark:border-[#22222E] flex items-center justify-between gap-2">
                     {/* Audition Button */}
                     <button
                       type="button"
                       onClick={() => handleAudition(opt)}
                       className={`pressable flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border transition ${
                         isAuditioning
-                          ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs'
-                          : 'bg-[#FAF8F5] hover:bg-[#F5F1EB] text-[#1C1917] border-[#E5DFD7]'
+                          ? 'bg-[#DC2626] text-white border-[#DC2626] shadow-xs glow-rose'
+                          : 'bg-[#FAF8F5] dark:bg-[#181824] hover:bg-[#F5F1EB] dark:hover:bg-[#202030] text-[#1C1917] dark:text-[#F4F4F6] border-[#E5DFD7] dark:border-[#2E2E42]'
                       }`}
                       title={lang === 'vi' ? 'Nghe thử vòng hòa thanh' : 'Audition chord progression'}
                     >
@@ -209,7 +209,7 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                         </>
                       ) : (
                         <>
-                          <Play className="w-3.5 h-3.5 fill-current text-[#D97706]" />
+                          <Play className="w-3.5 h-3.5 fill-current text-[#D97706] dark:text-[#F59E0B]" />
                           <span>{lang === 'vi' ? 'Nghe' : 'Play'}</span>
                         </>
                       )}
@@ -222,8 +222,8 @@ export const AiProgressionSuggester: React.FC<AiProgressionSuggesterProps> = ({
                       onClick={() => handleApply(opt)}
                       className={`pressable flex-1 flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold transition shadow-xs ${
                         isCurrentlyActive
-                          ? 'bg-[#10B981] text-white cursor-default'
-                          : 'bg-[#D97706] hover:bg-[#B45309] text-white'
+                          ? 'bg-[#10B981] text-white cursor-default glow-green'
+                          : 'bg-[#D97706] dark:bg-[#F59E0B] hover:bg-[#B45309] text-white dark:text-black font-extrabold'
                       }`}
                     >
                       {isCurrentlyActive ? (

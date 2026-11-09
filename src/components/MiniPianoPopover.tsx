@@ -53,12 +53,12 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       <div className="space-y-1.5">
         {label && (
           <div className="flex items-center justify-between text-[10px] font-mono font-bold">
-            <span className="text-[#1C1917]">{label}</span>
-            <span className="text-[#D97706]">{targetChord.symbol}</span>
+            <span className="text-[#1C1917] dark:text-[#F4F4F6]">{label}</span>
+            <span className="text-[#D97706] dark:text-[#F59E0B]">{targetChord.symbol}</span>
           </div>
         )}
         <div
-          className="relative bg-[#FAF8F5] border border-[#E5DFD7] rounded-md overflow-hidden select-none shadow-inner"
+          className="relative bg-[#FAF8F5] dark:bg-[#09090B] border border-[#E5DFD7] dark:border-[#272736] rounded-md overflow-hidden select-none shadow-inner"
           style={{ width: `${totalWidth}px`, height: `${whiteKeyHeight}px` }}
         >
           {/* White keys */}
@@ -79,8 +79,8 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
                   height: `${whiteKeyHeight}px`,
                   backgroundColor: bg,
                 }}
-                className={`absolute top-0 border-r border-[#E5DFD7] transition-colors duration-100 ${
-                  isLH || isRH ? 'z-10 shadow-xs' : ''
+                className={`absolute top-0 border-r border-[#E5DFD7] dark:border-[#272736] transition-colors duration-100 ${
+                  isLH || isRH ? 'z-10 shadow-xs' : 'dark:bg-[#E4E4E7]'
                 }`}
               />
             );
@@ -109,7 +109,7 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
                   backgroundColor: bg,
                 }}
                 className={`absolute top-0 z-20 rounded-b-[1px] border border-black/20 ${
-                  isLH || isRH ? 'ring-1 ring-white/50 shadow-sm' : ''
+                  isLH || isRH ? 'ring-1 ring-white/50 shadow-sm' : 'dark:bg-[#181822]'
                 }`}
               />
             );
@@ -123,28 +123,28 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
 
   return (
     <div
-      className={`popover-spring absolute z-50 pointer-events-none p-3 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] shadow-xl text-[#1C1917] space-y-2.5 ${
+      className={`popover-spring absolute z-50 pointer-events-none p-3 rounded-xl bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] shadow-xl dark:shadow-[0_0_25px_rgba(0,0,0,0.8)] text-[#1C1917] dark:text-[#F4F4F6] space-y-2.5 ${
         align === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'
       } ${className}`}
       style={{ minWidth: isMulti ? '320px' : '250px' }}
     >
       {/* Popover Header */}
-      <div className="flex items-center justify-between border-b border-[#F5F1EB] pb-2">
+      <div className="flex items-center justify-between border-b border-[#F5F1EB] dark:border-[#22222E] pb-2">
         <div className="flex items-center gap-2">
-          <span className="font-serif font-extrabold text-lg text-[#1C1917] tracking-tight">
+          <span className="font-serif font-extrabold text-lg text-[#1C1917] dark:text-[#F4F4F6] tracking-tight">
             {chord.symbol}
           </span>
-          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FAF8F5] text-[#78716C] border border-[#E5DFD7]">
+          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FAF8F5] dark:bg-[#1A1A26] text-[#78716C] dark:text-[#9494A6] border border-[#E5DFD7] dark:border-[#2E2E42]">
             {chord.romanDegree || 'Chord'}
           </span>
         </div>
         <div className="flex items-center gap-2.5 text-xs font-bold">
-          <span className="flex items-center gap-1 text-[#2563EB]">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
+          <span className="flex items-center gap-1 text-[#2563EB] dark:text-[#38BDF8]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] dark:bg-[#38BDF8]" />
             LH
           </span>
-          <span className="flex items-center gap-1 text-[#D97706]">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]" />
+          <span className="flex items-center gap-1 text-[#D97706] dark:text-[#F59E0B]">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] dark:bg-[#F59E0B]" />
             RH
           </span>
         </div>
@@ -153,7 +153,7 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       {/* Mini Visualizer Canvas */}
       {isMulti ? (
         <div className="space-y-2">
-          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
+          <div className="text-xs font-semibold text-[#78716C] dark:text-[#9494A6] uppercase tracking-wider">
             Chuỗi hợp âm dự kiến:
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -161,7 +161,7 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
               <React.Fragment key={ch.id || idx}>
                 {renderMiniPiano(ch, `#${idx + 1}`)}
                 {idx < multiChords.length - 1 && (
-                  <span className="text-[#A8A29E] font-bold text-sm self-center">➔</span>
+                  <span className="text-[#A8A29E] dark:text-[#71717A] font-bold text-sm self-center">➔</span>
                 )}
               </React.Fragment>
             ))}
@@ -172,13 +172,13 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       )}
 
       {/* Literal Note Names Breakdown */}
-      <div className="pt-2 border-t border-[#F5F1EB] text-xs font-mono flex flex-wrap items-center justify-between gap-2">
-        <div className="text-[#2563EB] font-bold">
-          <span className="text-[#78716C] font-normal text-xs mr-1">LH:</span>
+      <div className="pt-2 border-t border-[#F5F1EB] dark:border-[#22222E] text-xs font-mono flex flex-wrap items-center justify-between gap-2">
+        <div className="text-[#2563EB] dark:text-[#38BDF8] font-bold">
+          <span className="text-[#78716C] dark:text-[#9494A6] font-normal text-xs mr-1">LH:</span>
           {chord.leftHand.map((n) => n.noteName).join(' · ') || '—'}
         </div>
-        <div className="text-[#D97706] font-bold">
-          <span className="text-[#78716C] font-normal text-xs mr-1">RH:</span>
+        <div className="text-[#D97706] dark:text-[#F59E0B] font-bold">
+          <span className="text-[#78716C] dark:text-[#9494A6] font-normal text-xs mr-1">RH:</span>
           {chord.rightHand.map((n) => n.noteName).join(' · ') || '—'}
         </div>
       </div>

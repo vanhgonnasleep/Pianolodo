@@ -181,16 +181,16 @@ export const PracticeGymView: React.FC<PracticeGymViewProps> = ({
   return (
     <div className="space-y-6">
       {/* Header with Navigation Pills & Score Banner */}
-      <div className="p-4 md:p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E5DFD7] dark:border-[#292524] shadow-sm flex flex-wrap items-center justify-between gap-4 transition-colors">
+      <div className="p-4 md:p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] shadow-sm flex flex-wrap items-center justify-between gap-4 transition-colors">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] dark:bg-[#78350F]/40 border border-[#FDE68A] dark:border-[#D97706]/40 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B]">
+          <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] dark:bg-[#F59E0B]/15 border border-[#FDE68A] dark:border-[#F59E0B]/30 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] glow-amber">
             <Target className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-lg md:text-xl font-bold text-[#1C1917] dark:text-[#F5F5F4] tracking-tight font-serif">
+            <h2 className="text-lg md:text-xl font-bold text-[#1C1917] dark:text-[#F4F4F6] tracking-tight font-serif">
               {lang === 'vi' ? 'Phòng Luyện Phím & Cảm Âm (Gym)' : 'Practice Gym & Ear Training'}
             </h2>
-            <p className="text-xs text-[#78716C] dark:text-[#A8A29E]">
+            <p className="text-xs text-[#78716C] dark:text-[#9494A6]">
               {lang === 'vi'
                 ? 'Luyện phản xạ cơ ngón tay với cơ chế Wait-for-Note & Trắc nghiệm nhận diện màu hòa thanh'
                 : 'Muscle memory reinforcement with Wait-for-Note & harmonic color recognition quiz'}
@@ -199,13 +199,13 @@ export const PracticeGymView: React.FC<PracticeGymViewProps> = ({
         </div>
 
         {/* Sub-tab pills */}
-        <div className="flex items-center bg-[#FAF8F5] dark:bg-[#12100E] p-1 rounded-xl border border-[#E5DFD7] dark:border-[#292524] text-xs font-semibold gap-1">
+        <div className="flex items-center bg-[#FAF8F5] dark:bg-[#0C0C10] p-1 rounded-xl border border-[#E5DFD7] dark:border-[#272736] text-xs font-semibold gap-1">
           <button
             onClick={() => setActiveTab('wait-for-note')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
               activeTab === 'wait-for-note'
-                ? 'bg-[#FFFFFF] dark:bg-[#292524] text-[#D97706] dark:text-[#F59E0B] font-bold shadow-xs'
-                : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4]'
+                ? 'bg-[#FFFFFF] dark:bg-[#1A1A26] text-[#D97706] dark:text-[#F59E0B] font-bold shadow-xs border border-transparent dark:border-[#35354A]'
+                : 'text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
             }`}
           >
             <Keyboard className="w-3.5 h-3.5" />
@@ -219,8 +219,8 @@ export const PracticeGymView: React.FC<PracticeGymViewProps> = ({
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
               activeTab === 'ear-training'
-                ? 'bg-[#FFFFFF] dark:bg-[#292524] text-[#2563EB] dark:text-[#60A5FA] font-bold shadow-xs'
-                : 'text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F5F5F4]'
+                ? 'bg-[#FFFFFF] dark:bg-[#1A1A26] text-[#2563EB] dark:text-[#38BDF8] font-bold shadow-xs border border-transparent dark:border-[#35354A]'
+                : 'text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
             }`}
           >
             <Ear className="w-3.5 h-3.5" />
@@ -233,28 +233,28 @@ export const PracticeGymView: React.FC<PracticeGymViewProps> = ({
       {activeTab === 'wait-for-note' && (
         <div className="space-y-4">
           {/* Practice HUD Card */}
-          <div className="p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E5DFD7] dark:border-[#292524] shadow-sm space-y-6 transition-colors">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#F5F1EB] dark:border-[#292524] pb-4">
+          <div className="p-6 rounded-2xl bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] shadow-sm space-y-6 transition-colors">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#F5F1EB] dark:border-[#22222E] pb-4">
               <div className="flex items-center gap-3">
-                <span className="text-xs font-bold text-[#78716C] dark:text-[#A8A29E] uppercase tracking-wider">
+                <span className="text-xs font-bold text-[#78716C] dark:text-[#9494A6] uppercase tracking-wider">
                   {lang === 'vi' ? 'Luyện Phím Theo Hợp Âm:' : 'Follow Chord Target:'}
                 </span>
                 <span className="text-xl md:text-2xl font-extrabold font-serif text-[#D97706] dark:text-[#F59E0B]">
                   {currentPracticeChord?.symbol || 'Dm9'}
                 </span>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#12100E] text-[#2563EB] dark:text-[#60A5FA] border border-[#E5DFD7] dark:border-[#292524]">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#0C0C10] text-[#2563EB] dark:text-[#38BDF8] border border-[#E5DFD7] dark:border-[#272736]">
                   {currentPracticeChord?.romanDegree || 'ii9'}
                 </span>
               </div>
 
               {/* Score & Streak */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#FEF3C7] dark:bg-[#78350F]/40 border border-[#FDE68A] dark:border-[#D97706]/40 text-xs font-bold text-[#B45309] dark:text-[#FDE68A]">
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#FEF3C7] dark:bg-[#F59E0B]/20 border border-[#FDE68A] dark:border-[#F59E0B]/40 text-xs font-bold text-[#B45309] dark:text-[#FBBF24]">
                   <Flame className="w-4 h-4 text-[#D97706] dark:text-[#F59E0B]" />
                   <span>Streak: {streak}</span>
                 </div>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EFF6FF] dark:bg-[#1E3A8A]/40 border border-[#BFDBFE] dark:border-[#3B82F6]/40 text-xs font-bold text-[#1D4ED8] dark:text-[#93C5FD]">
-                  <Trophy className="w-4 h-4 text-[#2563EB] dark:text-[#60A5FA]" />
+                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#EFF6FF] dark:bg-[#3B82F6]/20 border border-[#BFDBFE] dark:border-[#3B82F6]/40 text-xs font-bold text-[#1D4ED8] dark:text-[#93C5FD]">
+                  <Trophy className="w-4 h-4 text-[#2563EB] dark:text-[#38BDF8]" />
                   <span>Rounds: {completedRounds}</span>
                 </div>
               </div>

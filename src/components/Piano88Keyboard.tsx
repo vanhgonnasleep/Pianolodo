@@ -230,18 +230,18 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
   };
 
   return (
-    <div className="bg-[#FFFFFF] dark:bg-[#1C1917] p-4 md:p-6 border border-[#E5DFD7] dark:border-[#292524] rounded-2xl shadow-sm space-y-3 transition-colors">
+    <div className="bg-[#FFFFFF] dark:bg-[#121217] p-4 md:p-6 border border-[#E5DFD7] dark:border-[#272736] rounded-2xl shadow-sm space-y-3 transition-colors">
       {/* Legend & Active Voicing Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">
-          <span className="font-bold text-[#1C1917] dark:text-[#F5F5F4] flex items-center gap-1.5 font-serif">
+          <span className="font-bold text-[#1C1917] dark:text-[#F4F4F6] flex items-center gap-1.5 font-serif">
             <span>{t('pianoTitle', lang)}</span>
             {previewChord && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF3C7] dark:bg-[#78350F]/40 text-[#B45309] dark:text-[#F59E0B] font-mono text-[11px] font-bold border border-[#FDE68A] dark:border-[#D97706]/40 animate-pulse">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] font-mono text-[11px] font-bold border border-[#FDE68A] dark:border-[#F59E0B]/40 animate-pulse glow-amber">
                 {previewSource === 'audition' ? (
-                  <Sparkles className="w-3 h-3 text-[#D97706]" />
+                  <Sparkles className="w-3 h-3 text-[#D97706] dark:text-[#F59E0B]" />
                 ) : (
-                  <Eye className="w-3 h-3 text-[#D97706]" />
+                  <Eye className="w-3 h-3 text-[#D97706] dark:text-[#F59E0B]" />
                 )}
                 <span>
                   {previewSource === 'audition'
@@ -254,21 +254,21 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
           </span>
 
           <div className="flex flex-wrap items-center gap-3">
-            <span className="flex items-center gap-1.5 font-semibold text-[#2563EB] dark:text-[#60A5FA]">
-              <span className="w-3 h-3 rounded-full bg-[#2563EB] inline-block shadow-xs" />
+            <span className="flex items-center gap-1.5 font-semibold text-[#2563EB] dark:text-[#3B82F6]">
+              <span className="w-3 h-3 rounded-full bg-[#2563EB] dark:bg-[#3B82F6] inline-block shadow-xs dark:shadow-[0_0_8px_#3B82F6]" />
               {t('leftHand', lang)}
             </span>
             <span className="flex items-center gap-1.5 font-semibold text-[#D97706] dark:text-[#F59E0B]">
-              <span className="w-3 h-3 rounded-full bg-[#D97706] inline-block shadow-xs" />
+              <span className="w-3 h-3 rounded-full bg-[#D97706] dark:bg-[#F59E0B] inline-block shadow-xs dark:shadow-[0_0_8px_#F59E0B]" />
               {t('rightHand', lang)}
             </span>
-            <span className="flex items-center gap-1.5 text-[#78716C] dark:text-[#A8A29E]">
-              <Lock className="w-3.5 h-3.5 text-[#D97706]" />
+            <span className="flex items-center gap-1.5 text-[#78716C] dark:text-[#9494A6]">
+              <Lock className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
               {t('keptNotesLegend', lang)}
             </span>
             {previewChord && (
-              <span className="flex items-center gap-1.5 font-semibold text-[#B45309] dark:text-[#F59E0B]">
-                <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#D97706] bg-[#FEF3C7] inline-block" />
+              <span className="flex items-center gap-1.5 font-semibold text-[#0284C7] dark:text-[#06B6D4]">
+                <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#06B6D4] bg-[#06B6D4]/20 inline-block" />
                 {lang === 'vi' ? 'Ghost Voicing' : 'Ghost Preview'}
               </span>
             )}
@@ -280,8 +280,8 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
             onClick={() => setShowFingering((prev) => !prev)}
             className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
               showFingering
-                ? 'bg-[#FEF3C7] dark:bg-[#78350F]/50 text-[#92400E] dark:text-[#FDE68A] border-[#FDE68A] dark:border-[#D97706]/40'
-                : 'bg-[#FAF8F5] dark:bg-[#292524] text-[#78716C] dark:text-[#A8A29E] border-[#E5DFD7] dark:border-[#38332E]'
+                ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#FBBF24] border-[#FDE68A] dark:border-[#F59E0B]/40'
+                : 'bg-[#FAF8F5] dark:bg-[#181824] text-[#78716C] dark:text-[#9494A6] border-[#E5DFD7] dark:border-[#2E2E42]'
             }`}
             title="Bật/tắt số ngón tay gợi ý (1-5)"
           >
@@ -289,7 +289,7 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
             <span>{lang === 'vi' ? 'Số ngón tay (1-5)' : 'Finger Numbers'}</span>
           </button>
 
-          <div className="text-[#78716C] dark:text-[#A8A29E] text-xs font-mono hidden sm:block">
+          <div className="text-[#78716C] dark:text-[#9494A6] text-xs font-mono hidden sm:block">
             {t('fingerZone', lang)}
           </div>
         </div>
@@ -298,7 +298,7 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
       {/* Piano Scrollable Viewport with Voice-Leading SVG Overlay */}
       <div
         ref={containerRef}
-        className="overflow-x-auto rounded-xl border border-[#E5DFD7] dark:border-[#292524] bg-[#FAF8F5] dark:bg-[#0C0A09] p-3 shadow-inner scrollbar-thin relative"
+        className="overflow-x-auto rounded-xl border border-[#E5DFD7] dark:border-[#272736] bg-[#FAF8F5] dark:bg-[#09090B] p-3 shadow-inner scrollbar-thin relative"
       >
         <div
           className="relative select-none mx-auto"

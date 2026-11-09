@@ -50,13 +50,13 @@ export const App: React.FC = () => {
   const [theoryDepth, setTheoryDepth] = useState<'beginner' | 'pro'>('pro');
   const [activeChordIndex, setActiveChordIndex] = useState<number>(0);
 
-  // Dual-Theme Studio System (Warm Ivory ↔ Dark OLED Stage Mode)
+  // Midnight Synth Studio Default Theme
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('pianolodo_theme');
       if (saved === 'dark' || saved === 'light') return saved;
     }
-    return 'light';
+    return 'dark'; // Midnight Synth Studio as the primary flagship experience
   });
 
   useEffect(() => {
@@ -374,7 +374,7 @@ export const App: React.FC = () => {
   const vibeName = lang === 'vi' ? currentVibeProfile.nameVi : currentVibeProfile.nameEn;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0C0A09] text-[#1C1917] dark:text-[#F5F5F4] flex font-sans selection:bg-[#FDE68A] selection:text-[#78350F] transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#09090B] text-[#1C1917] dark:text-[#F4F4F6] flex font-sans selection:bg-[#FDE68A] selection:text-[#78350F] dark:selection:bg-[#F59E0B] dark:selection:text-[#09090B] transition-colors">
       {/* 1. Left Clarion Docked Sidebar */}
       <ClarionSidebar
         currentTab={activeTab}
@@ -419,7 +419,7 @@ export const App: React.FC = () => {
 
         {/* Global Toast Notification */}
         {toastMessage && (
-          <div className="fixed top-20 right-6 z-50 bg-[#1C1917] dark:bg-[#F5F5F4] text-white dark:text-[#1C1917] px-4 py-2.5 rounded-xl shadow-lg border border-[#E5DFD7] dark:border-[#292524] text-xs font-bold flex items-center gap-2 animate-bounce">
+          <div className="fixed top-20 right-6 z-50 bg-[#1C1917] dark:bg-[#181824] text-white dark:text-[#F4F4F6] px-4 py-2.5 rounded-xl shadow-lg border border-[#E5DFD7] dark:border-[#272736] text-xs font-bold flex items-center gap-2 animate-bounce glow-amber">
             <Check className="w-4 h-4 text-emerald-500" />
             <span>{toastMessage}</span>
           </div>
@@ -431,41 +431,41 @@ export const App: React.FC = () => {
           {activeTab === 'studio' && (
             <div className="space-y-5">
               {/* Compact Editorial Studio Header Strip */}
-              <div className="p-3.5 md:p-4 rounded-2xl bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E5DFD7] dark:border-[#292524] shadow-xs flex flex-wrap items-center justify-between gap-3 transition-colors">
+              <div className="p-3.5 md:p-4 rounded-2xl bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] shadow-xs flex flex-wrap items-center justify-between gap-3 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] dark:bg-[#78350F]/40 border border-[#FDE68A] dark:border-[#D97706]/40 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] font-bold text-sm shadow-xs font-serif">
+                  <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] dark:bg-[#F59E0B]/15 border border-[#FDE68A] dark:border-[#F59E0B]/30 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] font-bold text-sm shadow-xs font-serif glow-amber">
                     88
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base md:text-lg font-bold text-[#1C1917] dark:text-[#F5F5F4] tracking-tight font-serif">
+                      <h2 className="text-base md:text-lg font-bold text-[#1C1917] dark:text-[#F4F4F6] tracking-tight font-serif">
                         Pianolodo Studio 3.0
                       </h2>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#12100E] text-[#D97706] dark:text-[#F59E0B] border border-[#E5DFD7] dark:border-[#292524]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#0C0C10] text-[#D97706] dark:text-[#F59E0B] border border-[#E5DFD7] dark:border-[#222230]">
                         Tone {keyRoot}
                       </span>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#12100E] text-[#10B981] border border-[#E5DFD7] dark:border-[#292524]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#0C0C10] text-[#10B981] border border-[#E5DFD7] dark:border-[#222230]">
                         {avgSmoothness}% {lang === 'vi' ? 'Độ mượt' : 'Smoothness'}
                       </span>
                     </div>
-                    <p className="text-xs md:text-sm text-[#78716C] dark:text-[#A8A29E] hidden sm:block">
+                    <p className="text-xs md:text-sm text-[#78716C] dark:text-[#9494A6] hidden sm:block">
                       {vibeName} • {progressionState.reharmonizedChords.length} {lang === 'vi' ? 'hợp âm' : 'chords'} • Deterministic Voice-Leading
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#78716C] dark:text-[#A8A29E] bg-[#FAF8F5] dark:bg-[#12100E] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#292524]">
+                  <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#78716C] dark:text-[#9494A6] bg-[#FAF8F5] dark:bg-[#0C0C10] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#222230]">
                     <Command className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
                     <span>
-                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">Space</kbd> Play ·{' '}
-                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">←</kbd>
-                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">→</kbd> Step ·{' '}
-                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">QWERTY</kbd> Play
+                      <kbd className="font-mono bg-white dark:bg-[#1E1E2A] dark:text-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#2E2E40] text-xs">Space</kbd> Play ·{' '}
+                      <kbd className="font-mono bg-white dark:bg-[#1E1E2A] dark:text-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#2E2E40] text-xs">←</kbd>
+                      <kbd className="font-mono bg-white dark:bg-[#1E1E2A] dark:text-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#2E2E40] text-xs">→</kbd> Step ·{' '}
+                      <kbd className="font-mono bg-white dark:bg-[#1E1E2A] dark:text-[#F4F4F6] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#2E2E40] text-xs">QWERTY</kbd> Play
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] dark:bg-[#12100E] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#292524] text-xs font-mono text-[#065F46] dark:text-[#34D399] font-semibold">
+                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] dark:bg-[#0C0C10] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#222230] text-xs font-mono text-[#065F46] dark:text-[#34D399] font-semibold">
                     <ShieldCheck className="w-4 h-4 text-[#10B981]" />
                     <span>On-Device</span>
                   </div>
@@ -621,12 +621,12 @@ export const App: React.FC = () => {
         />
 
         {/* Executive Footer */}
-        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#E5DFD7] dark:border-[#292524] bg-[#F7F4EE] dark:bg-[#0C0A09] text-xs text-[#78716C] dark:text-[#A8A29E] flex flex-wrap items-center justify-between gap-4 transition-colors">
+        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#E5DFD7] dark:border-[#22222E] bg-[#F7F4EE] dark:bg-[#0A0A0E] text-xs text-[#78716C] dark:text-[#9494A6] flex flex-wrap items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] pulse-dot" />
-            <span>{t('footerLeft', lang)}</span>
+            <span className="w-2 h-2 rounded-full bg-[#10B981] pulse-dot shadow-[0_0_8px_#10B981]" />
+            <span className="dark:text-[#D4D4D8]">{t('footerLeft', lang)}</span>
           </div>
-          <div className="text-[11px] text-[#A8A29E] dark:text-[#78716C] font-mono">
+          <div className="text-[11px] text-[#A8A29E] dark:text-[#71717A] font-mono">
             {t('footerRight', lang)}
           </div>
         </footer>

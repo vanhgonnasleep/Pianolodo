@@ -70,20 +70,20 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
   const innerR = 68;
 
   return (
-    <div className="rounded-2xl border border-[#E5DFD7] dark:border-[#292524] bg-[#FFFFFF] dark:bg-[#1C1917] p-4 shadow-sm transition-colors">
-      <div className="flex items-center justify-between pb-3 border-b border-[#F5F1EB] dark:border-[#292524]">
+    <div className="rounded-2xl border border-[#E5DFD7] dark:border-[#272736] bg-[#FFFFFF] dark:bg-[#121217] p-4 shadow-sm transition-colors">
+      <div className="flex items-center justify-between pb-3 border-b border-[#F5F1EB] dark:border-[#22222E]">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-[#FEF3C7] dark:bg-[#78350F]/40 border border-[#FDE68A] dark:border-[#D97706]/40 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B]">
+          <div className="w-8 h-8 rounded-xl bg-[#FEF3C7] dark:bg-[#F59E0B]/15 border border-[#FDE68A] dark:border-[#F59E0B]/30 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] glow-amber">
             <Compass className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F5F5F4] flex items-center gap-1.5 font-serif">
+            <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F4F4F6] flex items-center gap-1.5 font-serif">
               <span>{lang === 'vi' ? 'Vòng Hòa Thanh Bậc 5' : 'Circle of Fifths Compass'}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#FAF8F5] dark:bg-[#292524] text-[#D97706] dark:text-[#F59E0B] font-bold">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#FAF8F5] dark:bg-[#181824] text-[#D97706] dark:text-[#F59E0B] font-bold border border-transparent dark:border-[#2E2E42]">
                 {currentKey}
               </span>
             </h3>
-            <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E]">
+            <p className="text-[11px] text-[#78716C] dark:text-[#9494A6]">
               {lang === 'vi'
                 ? 'Định vị giọng chủ, bậc phụ cận IV - V và thay thế Tritone'
                 : 'Interactive harmonic compass with diatonic neighbors & tritone sub'}
@@ -93,7 +93,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
 
         <button
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="p-1 rounded-lg text-[#78716C] hover:text-[#1C1917] dark:hover:text-[#F5F5F4] hover:bg-[#FAF8F5] dark:hover:bg-[#292524] transition"
+          className="p-1 rounded-lg text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6] hover:bg-[#FAF8F5] dark:hover:bg-[#181824] transition"
         >
           {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
@@ -111,7 +111,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 r={outerR + 18}
                 fill="none"
                 stroke="currentColor"
-                className="text-[#F5F1EB] dark:text-[#292524]"
+                className="text-[#F5F1EB] dark:text-[#181824]"
                 strokeWidth={36}
               />
 
@@ -122,7 +122,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 r={innerR + 6}
                 fill="none"
                 stroke="currentColor"
-                className="text-[#FAF8F5] dark:text-[#1F1C1A]"
+                className="text-[#FAF8F5] dark:text-[#12121A]"
                 strokeWidth={28}
               />
 
@@ -131,7 +131,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 cx={center}
                 cy={center}
                 r={innerR - 18}
-                className="fill-[#FFFFFF] dark:fill-[#12100E] stroke-[#E5DFD7] dark:stroke-[#292524]"
+                className="fill-[#FFFFFF] dark:fill-[#0C0C10] stroke-[#E5DFD7] dark:stroke-[#272736]"
                 strokeWidth={1.5}
               />
               <text
@@ -146,7 +146,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 x={center}
                 y={center + 12}
                 textAnchor="middle"
-                className="fill-[#78716C] dark:fill-[#A8A29E] text-[10px] font-mono"
+                className="fill-[#78716C] dark:fill-[#9494A6] text-[10px] font-mono"
               >
                 {lang === 'vi' ? 'Giọng chủ' : 'Tonic'}
               </text>
@@ -170,9 +170,9 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                 let outerText = '#1C1917';
 
                 if (isCurrentTonic) {
-                  outerBg = '#D97706';
-                  outerBorder = '#B45309';
-                  outerText = '#FFFFFF';
+                  outerBg = '#F59E0B';
+                  outerBorder = '#FBBF24';
+                  outerText = '#09090B';
                 } else if (isIV || isV) {
                   outerBg = '#FEF3C7';
                   outerBorder = '#FDE68A';
@@ -192,10 +192,10 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                         y1={outerY}
                         x2={center + outerR * Math.cos(((sector.angle + 180) * Math.PI) / 180)}
                         y2={center + outerR * Math.sin(((sector.angle + 180) * Math.PI) / 180)}
-                        stroke="#2563EB"
+                        stroke="#3B82F6"
                         strokeDasharray="3 3"
                         strokeWidth={1.5}
-                        opacity={0.4}
+                        opacity={0.6}
                       />
                     )}
 
@@ -234,7 +234,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
                         x={innerX}
                         y={innerY + 3}
                         textAnchor="middle"
-                        className="fill-[#78716C] dark:fill-[#A8A29E] text-[10px] font-medium font-sans select-none"
+                        className="fill-[#78716C] dark:fill-[#9494A6] text-[10px] font-medium font-sans select-none"
                       >
                         {sector.minor}
                       </text>
@@ -247,26 +247,26 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
 
           {/* Harmonic Relationship Legend & Quick Actions */}
           <div className="space-y-3 text-xs max-w-xs">
-            <div className="space-y-1.5 p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#12100E] border border-[#E5DFD7] dark:border-[#292524]">
+            <div className="space-y-1.5 p-3 rounded-xl bg-[#FAF8F5] dark:bg-[#0C0C10] border border-[#E5DFD7] dark:border-[#272736]">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5 font-bold text-[#D97706] dark:text-[#F59E0B]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] dark:bg-[#F59E0B] shadow-[0_0_6px_#F59E0B]" />
                   {lang === 'vi' ? 'Giọng chủ (Tonic I)' : 'Tonic Key (I)'}
                 </span>
-                <span className="font-mono font-bold text-sm text-[#1C1917] dark:text-[#F5F5F4]">{currentKey} Major</span>
+                <span className="font-mono font-bold text-sm text-[#1C1917] dark:text-[#F4F4F6]">{currentKey} Major</span>
               </div>
-              <div className="flex items-center justify-between text-[#78716C] dark:text-[#A8A29E]">
+              <div className="flex items-center justify-between text-[#78716C] dark:text-[#9494A6]">
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
                   {lang === 'vi' ? 'Bậc IV / V (Cận kề)' : 'Subdominant (IV) & Dominant (V)'}
                 </span>
-                <span className="font-mono font-semibold">
+                <span className="font-mono font-semibold dark:text-[#D4D4D8]">
                   {CIRCLE_KEYS[ivIndex].major} • {CIRCLE_KEYS[vIndex].major}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-[#2563EB] dark:text-[#60A5FA]">
+              <div className="flex items-center justify-between text-[#2563EB] dark:text-[#38BDF8]">
                 <span className="flex items-center gap-1.5 font-semibold">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB] dark:bg-[#38BDF8]" />
                   {lang === 'vi' ? 'Thay thế Tritone (bII7)' : 'Tritone Sub (bII7)'}
                 </span>
                 <span className="font-mono font-bold">
@@ -275,7 +275,7 @@ export const CircleOfFifths: React.FC<CircleOfFifthsProps> = ({
               </div>
             </div>
 
-            <p className="text-[11px] text-[#78716C] dark:text-[#A8A29E] leading-relaxed">
+            <p className="text-[11px] text-[#78716C] dark:text-[#9494A6] leading-relaxed">
               {lang === 'vi'
                 ? '💡 Mẹo: Bấm trực tiếp vào các cung trên vòng để đổi giọng tức thì hoặc nghe thử âm sắc.'
                 : '💡 Tip: Click any sector on the wheel to instantly transpose the studio or audition the root.'}

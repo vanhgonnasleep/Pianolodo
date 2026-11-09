@@ -147,12 +147,12 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
   const { leftHand, rightHand, voiceLeading } = activeChord;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-[#FFFFFF] border border-[#E5DFD7] rounded-2xl p-4 md:p-6 shadow-sm">
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] rounded-2xl p-4 md:p-6 shadow-sm transition-colors">
       {/* Column 1: Literal Note Names & Hands Readout */}
       <div className="md:col-span-7 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-[#1C1917] flex items-center gap-2">
-            <Music className="w-4 h-4 text-[#D97706]" />
+          <h3 className="text-sm font-bold text-[#1C1917] dark:text-[#F4F4F6] flex items-center gap-2">
+            <Music className="w-4 h-4 text-[#D97706] dark:text-[#F59E0B]" />
             {t('voicingDetailTitle', lang)}
           </h3>
 
@@ -160,13 +160,13 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
             <button
               onClick={handleCopyVoicing}
               title={t('copyVoicingBtn', lang)}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] hover:bg-[#F5F1EB] text-xs font-semibold text-[#1C1917] border border-[#E5DFD7] transition"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#FAF8F5] dark:bg-[#181824] hover:bg-[#F5F1EB] dark:hover:bg-[#202030] text-xs font-semibold text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#2E2E42] transition"
             >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#78716C]" />}
+              {copied ? <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-3.5 h-3.5 text-[#78716C] dark:text-[#9494A6]" />}
               <span>{copied ? (lang === 'vi' ? 'Đã sao chép!' : 'Copied!') : (lang === 'vi' ? 'Copy nốt' : 'Copy notes')}</span>
             </button>
 
-            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] border border-[#FDE68A] dark:border-[#F59E0B]/40">
               {activeChord.symbol} ({activeChord.romanDegree})
             </span>
           </div>
@@ -175,16 +175,16 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
         {/* Left hand & Right hand pill lists */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Left Hand */}
-          <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-blue-200 space-y-2">
-            <div className="text-sm font-bold text-[#2563EB] flex items-center justify-between">
+          <div className="bg-[#FAF8F5] dark:bg-[#0C0C10] p-3.5 rounded-xl border border-blue-200 dark:border-[#1E3A8A] space-y-2">
+            <div className="text-sm font-bold text-[#2563EB] dark:text-[#38BDF8] flex items-center justify-between">
               <span>{t('leftHand', lang)}:</span>
-              <span className="text-xs text-[#78716C]">{t('lhRange', lang)}</span>
+              <span className="text-xs text-[#78716C] dark:text-[#9494A6]">{t('lhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {leftHand.map((n, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#1D4ED8] border border-blue-200 text-sm font-bold font-mono"
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-[#1E3A8A]/30 text-[#1D4ED8] dark:text-[#60A5FA] border border-blue-200 dark:border-[#2563EB]/40 text-sm font-bold font-mono"
                 >
                   {n.noteName}{' '}
                   <span className="text-xs font-normal opacity-90">({n.role})</span>
@@ -194,16 +194,16 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
           </div>
 
           {/* Right Hand */}
-          <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-amber-200 space-y-2">
-            <div className="text-sm font-bold text-[#D97706] flex items-center justify-between">
+          <div className="bg-[#FAF8F5] dark:bg-[#0C0C10] p-3.5 rounded-xl border border-amber-200 dark:border-[#78350F] space-y-2">
+            <div className="text-sm font-bold text-[#D97706] dark:text-[#F59E0B] flex items-center justify-between">
               <span>{t('rightHand', lang)}:</span>
-              <span className="text-xs text-[#78716C]">{t('rhRange', lang)}</span>
+              <span className="text-xs text-[#78716C] dark:text-[#9494A6]">{t('rhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {rightHand.map((n, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-amber-50 text-[#B45309] border border-amber-200 text-sm font-bold font-mono"
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-[#78350F]/30 text-[#B45309] dark:text-[#FBBF24] border border-amber-200 dark:border-[#D97706]/40 text-sm font-bold font-mono"
                 >
                   {n.noteName}{' '}
                   <span className="text-xs font-normal opacity-90">({n.role})</span>
@@ -214,20 +214,20 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
         </div>
 
         {/* Finger movement diff readout */}
-        <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E5DFD7] text-sm space-y-2">
-          <div className="font-semibold text-[#1C1917] flex items-center justify-between">
+        <div className="bg-[#FAF8F5] dark:bg-[#14141C] p-3.5 rounded-xl border border-[#E5DFD7] dark:border-[#272736] text-sm space-y-2">
+          <div className="font-semibold text-[#1C1917] dark:text-[#F4F4F6] flex items-center justify-between">
             <span>{t('movementDiffTitle', lang)}</span>
             <span className="text-[#10B981] font-mono font-bold">
               {t('smoothScore', lang)}: {voiceLeading.smoothnessScore}/100
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-[#78716C] text-xs">
+          <div className="flex flex-wrap items-center gap-3 text-[#78716C] dark:text-[#9494A6] text-xs">
             {voiceLeading.keptNotes.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />
                 <span>{t('keptNotesLabel', lang)}</span>
-                <span className="font-mono font-bold text-[#065F46]">
+                <span className="font-mono font-bold text-[#065F46] dark:text-[#34D399]">
                   {voiceLeading.keptNotes.join(', ')}
                 </span>
               </div>
@@ -239,9 +239,9 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
                 {voiceLeading.movedNotes.map((m, idx) => (
                   <span
                     key={idx}
-                    className="font-mono px-1.5 py-0.5 rounded bg-[#FFFFFF] text-[#1C1917] border border-[#E5DFD7] flex items-center gap-1 text-[10px]"
+                    className="font-mono px-1.5 py-0.5 rounded bg-[#FFFFFF] dark:bg-[#1E1E2A] text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#2E2E40] flex items-center gap-1 text-[10px]"
                   >
-                    {m.fromNote} <ArrowRight className="w-2.5 h-2.5 text-[#D97706]" /> {m.toNote} (
+                    {m.fromNote} <ArrowRight className="w-2.5 h-2.5 text-[#D97706] dark:text-[#F59E0B]" /> {m.toNote} (
                     {m.semitones > 0 ? `+${m.semitones}` : m.semitones})
                   </span>
                 ))}
@@ -249,21 +249,21 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
             )}
 
             {voiceLeading.keptNotes.length === 0 && voiceLeading.movedNotes.length === 0 && (
-              <span className="text-[#A8A29E] italic">{t('firstChordLabel', lang)}</span>
+              <span className="text-[#A8A29E] dark:text-[#71717A] italic">{t('firstChordLabel', lang)}</span>
             )}
           </div>
         </div>
       </div>
 
       {/* Column 2: VexFlow Grand Staff Notation */}
-      <div className="md:col-span-5 flex flex-col items-center justify-center bg-[#FAF8F5] p-4 rounded-xl border border-[#E5DFD7]">
-        <div className="text-xs font-semibold text-[#78716C] mb-1 w-full text-left flex items-center justify-between">
+      <div className="md:col-span-5 flex flex-col items-center justify-center bg-[#FAF8F5] dark:bg-[#0C0C10] p-4 rounded-xl border border-[#E5DFD7] dark:border-[#272736]">
+        <div className="text-xs font-semibold text-[#78716C] dark:text-[#9494A6] mb-1 w-full text-left flex items-center justify-between">
           <span>{t('grandStaffTitle', lang)}</span>
-          <span className="text-[10px] text-[#A8A29E] font-mono">VexFlow 5 SVG</span>
+          <span className="text-[10px] text-[#A8A29E] dark:text-[#71717A] font-mono">VexFlow 5 SVG</span>
         </div>
         <div
           ref={vexflowRef}
-          className="flex items-center justify-center w-full min-h-[190px] overflow-hidden"
+          className="flex items-center justify-center w-full min-h-[190px] overflow-hidden dark:[&_svg]:filter dark:[&_svg]:invert dark:[&_svg]:hue-rotate-180"
         />
       </div>
     </div>
