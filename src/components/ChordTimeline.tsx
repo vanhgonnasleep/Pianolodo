@@ -182,35 +182,35 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
 
                 {/* Header: Roman degree + Badge */}
                 <div className="flex items-center justify-between gap-1 mb-1.5">
-                  <span className="text-xs font-mono font-bold text-[#D97706]">
+                  <span className="text-sm font-mono font-bold text-[#D97706]">
                     {chord.romanDegree}
                   </span>
                   {isBridge && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span className="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
                       {t('bridgeBadge', lang)}
                     </span>
                   )}
                 </div>
 
                 {/* Main Chord Symbol */}
-                <div className="text-lg md:text-xl font-extrabold text-[#1C1917] tracking-tight font-serif">
+                <div className="text-xl md:text-2xl font-extrabold text-[#1C1917] tracking-tight font-serif">
                   {chord.symbol}
                 </div>
 
                 {/* Original comparison */}
                 {original && original !== chord.symbol && (
-                  <div className="text-[11px] text-[#A8A29E] line-through font-mono">
+                  <div className="text-xs text-[#A8A29E] line-through font-mono">
                     {t('originalComparison', lang)}: {original}
                   </div>
                 )}
 
                 {/* Smoothness badge */}
-                <div className="mt-2 pt-1.5 border-t border-[#E5DFD7]/60 flex items-center justify-between text-[11px] text-[#78716C]">
+                <div className="mt-2 pt-1.5 border-t border-[#E5DFD7]/60 flex items-center justify-between text-xs text-[#78716C]">
                   <span className="flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3 text-[#10B981]" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
                     {t('smoothScore', lang)}
                   </span>
-                  <span className="font-mono font-semibold text-[#10B981]">
+                  <span className="font-mono font-bold text-[#10B981]">
                     {chord.voiceLeading.smoothnessScore}%
                   </span>
                 </div>
@@ -221,7 +221,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
                 <button
                   onClick={() => openBridgeModal(idx)}
                   title={t('bridgeTooltip', lang)}
-                  className="pressable flex-shrink-0 w-7 h-7 rounded-full bg-[#FAF8F5] hover:bg-[#FEF3C7] hover:text-[#B45309] hover:border-[#D97706] text-[#78716C] border border-[#E5DFD7] flex items-center justify-center transition shadow-xs"
+                  className="pressable flex-shrink-0 w-8 h-8 rounded-full bg-[#FAF8F5] hover:bg-[#FEF3C7] hover:text-[#B45309] hover:border-[#D97706] text-[#78716C] border border-[#E5DFD7] flex items-center justify-center transition shadow-xs text-sm font-bold"
                 >
                   <Plus className="w-3.5 h-3.5" />
                 </button>

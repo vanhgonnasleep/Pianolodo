@@ -131,20 +131,20 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       {/* Popover Header */}
       <div className="flex items-center justify-between border-b border-[#F5F1EB] pb-2">
         <div className="flex items-center gap-2">
-          <span className="font-serif font-extrabold text-base text-[#1C1917] tracking-tight">
+          <span className="font-serif font-extrabold text-lg text-[#1C1917] tracking-tight">
             {chord.symbol}
           </span>
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#FAF8F5] text-[#78716C] border border-[#E5DFD7]">
+          <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-[#FAF8F5] text-[#78716C] border border-[#E5DFD7]">
             {chord.romanDegree || 'Chord'}
           </span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] font-semibold">
+        <div className="flex items-center gap-2.5 text-xs font-bold">
           <span className="flex items-center gap-1 text-[#2563EB]">
-            <span className="w-2 h-2 rounded-full bg-[#2563EB]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
             LH
           </span>
           <span className="flex items-center gap-1 text-[#D97706]">
-            <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]" />
             RH
           </span>
         </div>
@@ -153,7 +153,7 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       {/* Mini Visualizer Canvas */}
       {isMulti ? (
         <div className="space-y-2">
-          <div className="text-[10px] font-semibold text-[#78716C] uppercase tracking-wider">
+          <div className="text-xs font-semibold text-[#78716C] uppercase tracking-wider">
             Chuỗi hợp âm dự kiến:
           </div>
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
@@ -161,7 +161,7 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
               <React.Fragment key={ch.id || idx}>
                 {renderMiniPiano(ch, `#${idx + 1}`)}
                 {idx < multiChords.length - 1 && (
-                  <span className="text-[#A8A29E] font-bold text-xs self-center">➔</span>
+                  <span className="text-[#A8A29E] font-bold text-sm self-center">➔</span>
                 )}
               </React.Fragment>
             ))}
@@ -172,13 +172,13 @@ export const MiniPianoPopover: React.FC<MiniPianoPopoverProps> = ({
       )}
 
       {/* Literal Note Names Breakdown */}
-      <div className="pt-1.5 border-t border-[#F5F1EB] text-[11px] font-mono flex flex-wrap items-center justify-between gap-2">
+      <div className="pt-2 border-t border-[#F5F1EB] text-xs font-mono flex flex-wrap items-center justify-between gap-2">
         <div className="text-[#2563EB] font-bold">
-          <span className="text-[#78716C] font-normal text-[10px] mr-1">LH:</span>
+          <span className="text-[#78716C] font-normal text-xs mr-1">LH:</span>
           {chord.leftHand.map((n) => n.noteName).join(' · ') || '—'}
         </div>
         <div className="text-[#D97706] font-bold">
-          <span className="text-[#78716C] font-normal text-[10px] mr-1">RH:</span>
+          <span className="text-[#78716C] font-normal text-xs mr-1">RH:</span>
           {chord.rightHand.map((n) => n.noteName).join(' · ') || '—'}
         </div>
       </div>

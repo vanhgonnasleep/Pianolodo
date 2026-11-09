@@ -76,11 +76,11 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Why Smooth */}
             <div className="bg-[#FAF8F5] p-4 rounded-xl border border-amber-200/80 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#D97706] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#D97706] uppercase tracking-wider">
                 <Lightbulb className="w-4 h-4 text-[#D97706]" />
                 <span>{t('whySmooth', lang)}</span>
               </div>
-              <p className="text-xs md:text-sm text-[#44403C] leading-relaxed">
+              <p className="text-sm md:text-base text-[#44403C] leading-relaxed">
                 {lang === 'vi'
                   ? activeChord.explanation.whySmooth
                   : activeChord.explanation.whySmoothEn || activeChord.explanation.whySmooth}
@@ -89,11 +89,11 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
 
             {/* Finger Tip */}
             <div className="bg-[#FAF8F5] p-4 rounded-xl border border-blue-200/80 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-[#2563EB] uppercase tracking-wider">
+              <div className="flex items-center gap-2 text-sm font-bold text-[#2563EB] uppercase tracking-wider">
                 <Hand className="w-4 h-4 text-[#2563EB]" />
                 <span>{t('fingerTip', lang)}</span>
               </div>
-              <p className="text-xs md:text-sm text-[#44403C] leading-relaxed">
+              <p className="text-sm md:text-base text-[#44403C] leading-relaxed">
                 {lang === 'vi'
                   ? activeChord.explanation.fingerTip
                   : activeChord.explanation.fingerTipEn || activeChord.explanation.fingerTip}

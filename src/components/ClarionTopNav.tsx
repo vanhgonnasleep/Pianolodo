@@ -57,8 +57,8 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
         )}
 
         <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-lg bg-[#FAF8F5] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-xs flex items-center gap-1.5 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+          <span className="px-3 py-1 rounded-lg bg-[#FAF8F5] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-sm flex items-center gap-1.5 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706]" />
             Tone {keyRoot} Major
           </span>
 
@@ -67,15 +67,15 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
             <button
               onClick={() => onTranspose(-1)}
               title="Dịch giọng xuống 1/2 cung (-1 semitone)"
-              className="px-2 py-0.5 rounded text-xs font-mono font-bold text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1] transition"
+              className="px-2.5 py-0.5 rounded text-sm font-mono font-bold text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1] transition"
             >
               -1
             </button>
-            <span className="w-px h-3 bg-[#E5DFD7]" />
+            <span className="w-px h-3.5 bg-[#E5DFD7]" />
             <button
               onClick={() => onTranspose(1)}
               title="Dịch giọng lên 1/2 cung (+1 semitone)"
-              className="px-2 py-0.5 rounded text-xs font-mono font-bold text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1] transition"
+              className="px-2.5 py-0.5 rounded text-sm font-mono font-bold text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1] transition"
             >
               +1
             </button>
@@ -86,7 +86,7 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
       {/* Center / Right: Instrument Switcher & Playback Engine */}
       <div className="flex items-center gap-3">
         {/* Instrument Switcher */}
-        <div className="hidden lg:flex items-center bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DFD7] text-xs">
+        <div className="hidden lg:flex items-center bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DFD7] text-sm">
           <button
             onClick={() => onInstrumentChange('grand-piano')}
             className={`px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 ${
@@ -95,7 +95,7 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
                 : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
-            <Volume2 className="w-3.5 h-3.5" />
+            <Volume2 className="w-4 h-4" />
             {t('grandPiano', lang)}
           </button>
           <button
@@ -106,7 +106,7 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
                 : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-4 h-4" />
             {t('warmRhodes', lang)}
           </button>
         </div>

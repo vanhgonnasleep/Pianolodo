@@ -322,42 +322,42 @@ export const App: React.FC = () => {
           {activeTab === 'studio' && (
             <div className="space-y-5">
               {/* Compact Editorial Studio Header Strip */}
-              <div className="p-3 md:p-4 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] shadow-xs flex flex-wrap items-center justify-between gap-3">
+              <div className="p-3.5 md:p-4 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] shadow-xs flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <span className="w-8 h-8 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] font-bold text-sm shadow-xs font-serif">
+                  <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] font-bold text-sm shadow-xs font-serif">
                     88
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-sm md:text-base font-bold text-[#1C1917] tracking-tight font-serif">
+                      <h2 className="text-base md:text-lg font-bold text-[#1C1917] tracking-tight font-serif">
                         Pianolodo Studio
                       </h2>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
                         Tone {keyRoot}
                       </span>
-                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#10B981] border border-[#E5DFD7]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#10B981] border border-[#E5DFD7]">
                         {avgSmoothness}% {lang === 'vi' ? 'Độ mượt' : 'Smoothness'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#78716C] hidden sm:block">
+                    <p className="text-xs md:text-sm text-[#78716C] hidden sm:block">
                       {vibeName} • {progressionState.reharmonizedChords.length} {lang === 'vi' ? 'hợp âm' : 'chords'} • Deterministic Voice-Leading
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-[#78716C] bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DFD7]">
+                  <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#78716C] bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD7]">
                     <Command className="w-3.5 h-3.5 text-[#D97706]" />
                     <span>
-                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">Space</kbd> Play ·{' '}
-                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">←</kbd>
-                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">→</kbd> Step ·{' '}
-                      <kbd className="font-mono bg-white px-1 py-0.5 rounded border border-[#E5DFD7] text-[10px]">H</kbd> Scrub
+                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">Space</kbd> Play ·{' '}
+                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">←</kbd>
+                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">→</kbd> Step ·{' '}
+                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">H</kbd> Scrub
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] px-2.5 py-1.5 rounded-xl border border-[#E5DFD7] text-[11px] font-mono text-[#065F46] font-semibold">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#10B981]" />
+                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD7] text-xs font-mono text-[#065F46] font-semibold">
+                    <ShieldCheck className="w-4 h-4 text-[#10B981]" />
                     <span>On-Device</span>
                   </div>
                 </div>

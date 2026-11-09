@@ -242,7 +242,7 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
           </div>
         </div>
 
-        <div className="text-[#78716C] text-[11px] font-mono">
+        <div className="text-[#78716C] text-xs font-mono">
           {t('fingerZone', lang)}
         </div>
       </div>
@@ -323,16 +323,16 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
                   className={`absolute top-0 rounded-b-md border-r border-b border-l cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 active:scale-y-[0.98] origin-top ${bgClass}`}
                 >
                   {isKept && (
-                    <div className="absolute top-1 bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] text-[9px] rounded-full p-0.5 shadow-xs">
+                    <div className="absolute top-1 bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] text-[10px] rounded-full p-0.5 shadow-xs">
                       <Lock className="w-2.5 h-2.5" />
                     </div>
                   )}
                   {moved !== undefined && (
-                    <div className="absolute top-1 bg-[#1C1917] text-[#FDE68A] font-mono text-[9px] font-bold px-1 rounded shadow-xs">
+                    <div className="absolute top-1 bg-[#1C1917] text-[#FDE68A] font-mono text-[10px] font-bold px-1 rounded shadow-xs">
                       {moved > 0 ? `+${moved}` : moved}
                     </div>
                   )}
-                  <span className="text-[10px] font-semibold leading-none">{k.noteName}</span>
+                  <span className="text-xs font-bold leading-none">{k.noteName}</span>
                 </div>
               );
             })}
@@ -373,17 +373,17 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
                   className={`absolute top-0 z-10 rounded-b border cursor-pointer flex flex-col justify-end items-center pb-1.5 transition duration-75 shadow-md active:scale-y-[0.98] origin-top ${bgClass}`}
                 >
                   {isKept && (
-                    <div className="absolute top-0.5 bg-[#FEF3C7] text-[#B45309] text-[8px] rounded-full p-0.5">
+                    <div className="absolute top-0.5 bg-[#FEF3C7] text-[#B45309] text-[9px] rounded-full p-0.5">
                       <Lock className="w-2 h-2" />
                     </div>
                   )}
                   {moved !== undefined && (
-                    <div className="absolute top-0.5 bg-[#1C1917] text-[#FDE68A] font-mono text-[8px] font-bold px-0.5 rounded">
+                    <div className="absolute top-0.5 bg-[#1C1917] text-[#FDE68A] font-mono text-[9px] font-bold px-0.5 rounded">
                       {moved > 0 ? `+${moved}` : moved}
                     </div>
                   )}
 
-                  <span className="text-[8px] font-mono leading-none scale-90">{k.noteName}</span>
+                  <span className="text-[10px] font-semibold leading-none">{k.noteName}</span>
                 </div>
               );
             })}

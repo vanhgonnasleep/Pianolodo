@@ -203,17 +203,17 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
           {/* 1. Interactive Chord Chips Bar */}
           <div className="bg-[#FFFFFF] p-3 md:p-4 rounded-xl border border-[#E5DFD7] shadow-xs space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-[#D97706]" />
+              <span className="text-xs font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
+                <Target className="w-4 h-4 text-[#D97706]" />
                 <span>
                   {lang === 'vi'
                     ? '1. Danh sách hợp âm trong Input (Click để chọn đích dẫn lối, Rê chuột để soi phím):'
                     : '1. Input Chords List (Click to select target destination, Hover to preview):'}
                 </span>
               </span>
-              <span className="text-[11px] font-medium text-[#78716C]">
+              <span className="text-xs font-semibold text-[#78716C]">
                 {lang === 'vi' ? 'Đích hiện tại:' : 'Active Target:'}{' '}
-                <strong className="text-[#D97706] font-mono">[{activeTargetToken}]</strong>
+                <strong className="text-[#D97706] font-mono text-sm">[{activeTargetToken}]</strong>
               </span>
             </div>
 
@@ -243,10 +243,10 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                         : 'bg-[#FAF8F5] border-[#E5DFD7] text-[#1C1917] hover:border-[#D1C8BD]'
                     }`}
                   >
-                    <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-black/5 text-[#78716C]">
+                    <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-black/5 text-[#78716C]">
                       #{idx + 1}
                     </span>
-                    <span className="text-xs md:text-sm font-extrabold font-mono tracking-wide">
+                    <span className="text-sm md:text-base font-extrabold font-mono tracking-wide">
                       {token}
                     </span>
 
@@ -266,7 +266,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                         title={lang === 'vi' ? 'Xóa hợp âm này' : 'Remove chord'}
                         className="opacity-40 group-hover:opacity-100 hover:text-[#DC2626] p-0.5 rounded transition"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     )}
                   </div>
@@ -280,14 +280,14 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                   value={newChordText}
                   onChange={(e) => setNewChordText(e.target.value)}
                   placeholder={lang === 'vi' ? '+ Thêm hợp âm...' : '+ Add chord...'}
-                  className="w-28 sm:w-32 bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-2.5 py-1.2 text-xs font-mono font-semibold text-[#1C1917] focus:outline-none focus:border-[#D97706]"
+                  className="w-28 sm:w-32 bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-2.5 py-1.5 text-xs font-mono font-semibold text-[#1C1917] focus:outline-none focus:border-[#D97706]"
                 />
                 <button
                   type="submit"
                   disabled={!newChordText.trim()}
-                  className="pressable px-2.5 py-1.2 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] disabled:opacity-40 text-xs font-bold text-[#1C1917] border border-[#E5DFD7] flex items-center gap-1 transition"
+                  className="pressable px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#F5F1EB] disabled:opacity-40 text-xs font-bold text-[#1C1917] border border-[#E5DFD7] flex items-center gap-1 transition"
                 >
-                  <Plus className="w-3 h-3 text-[#D97706]" />
+                  <Plus className="w-3.5 h-3.5 text-[#D97706]" />
                   <span>{lang === 'vi' ? 'Thêm' : 'Add'}</span>
                 </button>
               </form>
@@ -297,15 +297,15 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
           {/* 2. Calculated 2-5-1 & Harmonic Cadence Options */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
-                <Wand2 className="w-3.5 h-3.5 text-[#D97706]" />
+              <span className="text-xs font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
+                <Wand2 className="w-4 h-4 text-[#D97706]" />
                 <span>
                   {lang === 'vi'
                     ? `2. Các Phương Án 2-5-1 & Hòa Thanh Dẫn Về [ ${activeTargetToken} ]:`
                     : `2. 2-5-1 & Cadence Approaches Leading to [ ${activeTargetToken} ]:`}
                 </span>
               </span>
-              <span className="text-[11px] text-[#78716C]">
+              <span className="text-xs text-[#78716C] font-semibold">
                 {cadenceOptions.length} {lang === 'vi' ? 'lựa chọn' : 'options'}
               </span>
             </div>
@@ -331,7 +331,7 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                       setHoveredCadenceId(null);
                       onLeaveHover?.();
                     }}
-                    className="relative p-3.5 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] hover:border-[#D97706]/40 shadow-xs flex flex-col justify-between gap-3 transition"
+                    className="relative p-4 rounded-xl bg-[#FFFFFF] border border-[#E5DFD7] hover:border-[#D97706]/40 shadow-xs flex flex-col justify-between gap-3 transition"
                   >
                     {/* Hover Multi-Chord Popover */}
                     {isHovered && opt.previewChords[0] && (
@@ -343,30 +343,30 @@ export const ChordCadenceWorkbench: React.FC<ChordCadenceWorkbenchProps> = ({
                       />
                     )}
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+                        <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
                           {badge}
                         </span>
-                        <span className="text-[10px] font-medium text-[#78716C] font-mono">
+                        <span className="text-xs font-semibold text-[#78716C] font-mono">
                           {opt.insertedFormula}
                         </span>
                       </div>
 
-                      <h4 className="text-xs font-bold text-[#1C1917] leading-snug line-clamp-1 font-serif">
+                      <h4 className="text-sm font-bold text-[#1C1917] leading-snug line-clamp-1 font-serif">
                         {title}
                       </h4>
 
-                      <div className="p-2 rounded-lg bg-[#FAF8F5] border border-[#F5F1EB] space-y-1">
-                        <div className="text-[10px] font-semibold text-[#78716C]">
+                      <div className="p-2.5 rounded-lg bg-[#FAF8F5] border border-[#F5F1EB] space-y-1">
+                        <div className="text-xs font-semibold text-[#78716C]">
                           {lang === 'vi' ? 'Chuỗi sau khi áp dụng:' : 'Resulting progression:'}
                         </div>
-                        <div className="text-xs font-mono font-bold text-[#D97706] truncate">
+                        <div className="text-sm font-mono font-bold text-[#D97706] truncate">
                           {opt.resultingFormula}
                         </div>
                       </div>
 
-                      <p className="text-[11px] text-[#78716C] leading-relaxed line-clamp-2">
+                      <p className="text-xs md:text-sm text-[#57534E] leading-relaxed line-clamp-2">
                         {rationale}
                       </p>
                     </div>

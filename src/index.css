@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
 @layer base {
+  html {
+    font-size: 17px;
+  }
+  @media (min-width: 1536px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
   :root {
     --shell-base: #faf8f5;
     --shell-panel: #ffffff;
@@ -26,6 +35,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     min-height: 100dvh;
+    font-size: 0.95rem;
+    line-height: 1.5;
     selection-background-color: #fde68a;
     selection-color: #78350f;
   }

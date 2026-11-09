@@ -150,18 +150,18 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {/* Left Hand */}
           <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-blue-200 space-y-2">
-            <div className="text-xs font-bold text-[#2563EB] flex items-center justify-between">
+            <div className="text-sm font-bold text-[#2563EB] flex items-center justify-between">
               <span>{t('leftHand', lang)}:</span>
-              <span className="text-[10px] text-[#78716C]">{t('lhRange', lang)}</span>
+              <span className="text-xs text-[#78716C]">{t('lhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {leftHand.map((n, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#1D4ED8] border border-blue-200 text-xs font-bold font-mono"
+                  className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#1D4ED8] border border-blue-200 text-sm font-bold font-mono"
                 >
                   {n.noteName}{' '}
-                  <span className="text-[10px] font-normal opacity-80">({n.role})</span>
+                  <span className="text-xs font-normal opacity-90">({n.role})</span>
                 </span>
               ))}
             </div>
@@ -169,18 +169,18 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
 
           {/* Right Hand */}
           <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-amber-200 space-y-2">
-            <div className="text-xs font-bold text-[#D97706] flex items-center justify-between">
+            <div className="text-sm font-bold text-[#D97706] flex items-center justify-between">
               <span>{t('rightHand', lang)}:</span>
-              <span className="text-[10px] text-[#78716C]">{t('rhRange', lang)}</span>
+              <span className="text-xs text-[#78716C]">{t('rhRange', lang)}</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {rightHand.map((n, idx) => (
                 <span
                   key={idx}
-                  className="px-2.5 py-1 rounded-lg bg-amber-50 text-[#B45309] border border-amber-200 text-xs font-bold font-mono"
+                  className="px-2.5 py-1 rounded-lg bg-amber-50 text-[#B45309] border border-amber-200 text-sm font-bold font-mono"
                 >
                   {n.noteName}{' '}
-                  <span className="text-[10px] font-normal opacity-80">({n.role})</span>
+                  <span className="text-xs font-normal opacity-90">({n.role})</span>
                 </span>
               ))}
             </div>
@@ -188,7 +188,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
         </div>
 
         {/* Finger movement diff readout */}
-        <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E5DFD7] text-xs space-y-2">
+        <div className="bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E5DFD7] text-sm space-y-2">
           <div className="font-semibold text-[#1C1917] flex items-center justify-between">
             <span>{t('movementDiffTitle', lang)}</span>
             <span className="text-[#10B981] font-mono font-bold">
@@ -196,7 +196,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-[#78716C] text-[11px]">
+          <div className="flex flex-wrap items-center gap-3 text-[#78716C] text-xs">
             {voiceLeading.keptNotes.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <CheckCircle2 className="w-3.5 h-3.5 text-[#10B981]" />

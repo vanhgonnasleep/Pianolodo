@@ -75,13 +75,13 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
             <AudioLines className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-sm font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5">
+            <div className="text-base font-extrabold tracking-tight text-[#1C1917] flex items-center gap-1.5">
               <span>Pianolodo</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-[#D97706]/15 text-[#B45309] border border-[#D97706]/25 font-bold">
+              <span className="text-xs font-mono px-1.5 py-0.5 rounded bg-[#D97706]/15 text-[#B45309] border border-[#D97706]/25 font-bold">
                 PRO
               </span>
             </div>
-            <div className="text-[11px] text-[#78716C] font-medium">
+            <div className="text-xs text-[#78716C] font-medium">
               {lang === 'vi' ? 'Trợ Lý Hòa Thanh' : 'Warm Studio v2.0'}
             </div>
           </div>
@@ -96,7 +96,7 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition text-left relative ${
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition text-left relative ${
                   isActive
                     ? 'bg-[#FFFFFF] text-[#1C1917] border border-[#E5DFD7] shadow-sm'
                     : 'text-[#78716C] hover:text-[#1C1917] hover:bg-[#EDE8E1]'
@@ -105,7 +105,7 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
                 <Icon className={`w-4 h-4 ${isActive ? 'text-[#D97706]' : 'text-[#A8A29E]'}`} />
                 <span>{lang === 'vi' ? item.labelVi : item.labelEn}</span>
                 {isActive && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] ml-auto shadow-xs" />
+                  <span className="w-2 h-2 rounded-full bg-[#D97706] ml-auto shadow-xs" />
                 )}
               </button>
             );
@@ -116,7 +116,7 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
       {/* Center Widget: Active Progression Status */}
       <div className="space-y-4 my-auto pt-6 pb-4">
         <div className="p-3.5 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] space-y-2 shadow-xs">
-          <div className="flex items-center justify-between text-[11px] font-bold text-[#78716C]">
+          <div className="flex items-center justify-between text-xs font-bold text-[#78716C]">
             <span className="flex items-center gap-1.5 text-[#1C1917]">
               <Music className="w-3.5 h-3.5 text-[#D97706]" />
               {lang === 'vi' ? 'Phiên làm việc' : 'Active Session'}

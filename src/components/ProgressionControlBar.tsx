@@ -196,9 +196,9 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
         {/* Input box */}
         <div className="md:col-span-7 flex flex-col gap-1">
-          <label className="text-xs font-semibold text-[#78716C] flex items-center justify-between">
+          <label className="text-sm font-semibold text-[#78716C] flex items-center justify-between">
             <span>{t('inputLabel', lang)}</span>
-            <span className="text-[11px] text-[#D97706] font-medium">{t('inputHint', lang)}</span>
+            <span className="text-xs text-[#D97706] font-medium">{t('inputHint', lang)}</span>
           </label>
           <div className="relative">
             <input
@@ -206,7 +206,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
               value={rawInput}
               onChange={(e) => onInputChange(e.target.value)}
               placeholder={t('inputPlaceholder', lang)}
-              className="w-full bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-4 py-2 text-sm md:text-base font-semibold text-[#1C1917] focus:outline-none focus:border-[#D97706] focus:ring-1 focus:ring-[#D97706] transition shadow-inner font-mono tracking-wider"
+              className="w-full bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-4 py-2 text-base md:text-lg font-bold text-[#1C1917] focus:outline-none focus:border-[#D97706] focus:ring-1 focus:ring-[#D97706] transition shadow-inner font-mono tracking-wider"
             />
           </div>
         </div>
@@ -214,12 +214,12 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
         {/* Key and Transpose */}
         <div className="md:col-span-5 flex flex-wrap items-center gap-2">
           <div className="flex flex-col gap-1 flex-1">
-            <label className="text-xs font-semibold text-[#78716C]">{t('keyRootLabel', lang)}</label>
+            <label className="text-sm font-semibold text-[#78716C]">{t('keyRootLabel', lang)}</label>
             <div className="flex items-center gap-1.5">
               <select
                 value={keyRoot}
                 onChange={(e) => onKeyChange(e.target.value)}
-                className="bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-3 py-1.5 text-sm font-bold text-[#D97706] focus:outline-none focus:border-[#D97706] flex-1 cursor-pointer font-serif"
+                className="bg-[#FAF8F5] border border-[#E5DFD7] rounded-xl px-3 py-1.5 text-base font-bold text-[#D97706] focus:outline-none focus:border-[#D97706] flex-1 cursor-pointer font-serif"
               >
                 {ALL_KEYS.map((k) => (
                   <option key={k} value={k}>
@@ -231,14 +231,14 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
               <button
                 onClick={() => onTranspose(-1)}
                 title="Transpose down 1 semitone"
-                className="pressable px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-xs shadow-xs"
+                className="pressable px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-sm shadow-xs"
               >
                 -1
               </button>
               <button
                 onClick={() => onTranspose(1)}
                 title="Transpose up 1 semitone"
-                className="pressable px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-xs shadow-xs"
+                className="pressable px-3 py-1.5 rounded-xl bg-[#FAF8F5] hover:bg-[#EDE8E1] text-[#1C1917] border border-[#E5DFD7] font-mono font-bold text-sm shadow-xs"
               >
                 +1
               </button>
@@ -249,7 +249,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
 
       {/* Third row: Quick Presets Scroll Strip */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
-        <span className="text-[11px] font-bold text-[#78716C] uppercase tracking-wider whitespace-nowrap mr-1">
+        <span className="text-xs font-bold text-[#78716C] uppercase tracking-wider whitespace-nowrap mr-1">
           {t('presetsLabel', lang)}:
         </span>
         {PRESET_PROGRESSIONS.map((preset) => {
@@ -259,9 +259,9 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
             <button
               key={preset.id}
               onClick={() => onSelectPreset(preset)}
-              className={`pressable whitespace-nowrap px-2.5 py-1 rounded-lg text-xs font-medium transition border flex items-center gap-1.5 ${
+              className={`pressable whitespace-nowrap px-3 py-1.5 rounded-lg text-sm font-medium transition border flex items-center gap-1.5 ${
                 isSelected
-                  ? 'bg-[#FEF3C7] text-[#B45309] border-[#D97706] shadow-xs font-semibold'
+                  ? 'bg-[#FEF3C7] text-[#B45309] border-[#D97706] shadow-xs font-bold'
                   : 'bg-[#FAF8F5] text-[#57534E] border-[#E5DFD7] hover:border-[#D1C8BD] hover:text-[#1C1917]'
               }`}
             >
@@ -273,7 +273,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
 
       {/* Studio Workbench Header: Segmented Control Tabs */}
       <div className="pt-2 border-t border-[#F5F1EB] flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DFD7] text-xs font-semibold gap-1">
+        <div className="flex items-center bg-[#FAF8F5] p-1 rounded-xl border border-[#E5DFD7] text-sm font-semibold gap-1.5">
           <button
             onClick={() => {
               setActiveWorkbenchTab('cadence-251');
@@ -285,7 +285,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
                 : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
-            <Wand2 className="w-3.5 h-3.5 text-[#D97706]" />
+            <Wand2 className="w-4 h-4 text-[#D97706]" />
             <span>{lang === 'vi' ? 'Chèn 2-5-1 & Dãy Hợp Âm' : '2-5-1 Cadence Inserter'}</span>
           </button>
 
@@ -300,9 +300,9 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
                 : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#D97706]" />
+            <Sparkles className="w-4 h-4 text-[#D97706]" />
             <span>{lang === 'vi' ? 'AI 5 Phong Cách' : 'AI 5-Style Options'}</span>
-            <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-[#FEF3C7] text-[#B45309]">
+            <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309]">
               {progressionOptions.length}
             </span>
           </button>
@@ -318,7 +318,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
                 : 'text-[#78716C] hover:text-[#1C1917]'
             }`}
           >
-            <Sliders className="w-3.5 h-3.5 text-[#D97706]" />
+            <Sliders className="w-4 h-4 text-[#D97706]" />
             <span>{lang === 'vi' ? 'Phong Cách & Gia Vị' : 'Vibe & Spice'}</span>
           </button>
         </div>
@@ -326,10 +326,10 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
         <button
           type="button"
           onClick={() => setIsWorkbenchOpen((prev) => !prev)}
-          className="pressable flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] text-xs font-semibold text-[#78716C] hover:text-[#1C1917] border border-[#E5DFD7]"
+          className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FAF8F5] text-sm font-semibold text-[#78716C] hover:text-[#1C1917] border border-[#E5DFD7]"
         >
           <span>{isWorkbenchOpen ? (lang === 'vi' ? 'Thu gọn khung công cụ' : 'Collapse workbench') : (lang === 'vi' ? 'Mở khung công cụ' : 'Open workbench')}</span>
-          {isWorkbenchOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          {isWorkbenchOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
       </div>
 
@@ -380,16 +380,16 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
                         <button
                           key={vId}
                           onClick={() => onVibeChange(vId)}
-                          className={`pressable p-2.5 rounded-xl border text-left transition ${
+                          className={`pressable p-3 rounded-xl border text-left transition ${
                             active
                               ? 'bg-[#FEF3C7] border-[#D97706] text-[#1C1917] shadow-xs'
                               : 'bg-[#FFFFFF] border-[#E5DFD7] text-[#78716C] hover:border-[#D1C8BD] hover:text-[#1C1917]'
                           }`}
                         >
-                          <div className={`text-xs font-bold font-serif ${active ? 'text-[#B45309]' : 'text-[#1C1917]'}`}>
+                          <div className={`text-sm font-bold font-serif ${active ? 'text-[#B45309]' : 'text-[#1C1917]'}`}>
                             {name}
                           </div>
-                          <div className="text-[10px] text-[#78716C] line-clamp-1">{desc}</div>
+                          <div className="text-xs text-[#78716C] line-clamp-1">{desc}</div>
                         </button>
                       );
                     })}
@@ -398,7 +398,7 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
 
                 {/* Spice Level */}
                 <div className="lg:col-span-4 flex flex-col gap-1.5">
-                  <span className="text-xs font-semibold text-[#78716C]">{t('spiceLevelLabel', lang)}</span>
+                  <span className="text-sm font-semibold text-[#78716C]">{t('spiceLevelLabel', lang)}</span>
                   <div className="grid grid-cols-3 gap-1.5 bg-[#FFFFFF] p-1.5 rounded-xl border border-[#E5DFD7]">
                     {[
                       { level: 1 as SpiceLevel, label: t('spice1Label', lang), desc: t('spice1Desc', lang) },
@@ -416,8 +416,8 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
                               : 'text-[#78716C] hover:text-[#1C1917]'
                           }`}
                         >
-                          <div className="text-xs font-semibold">{s.label}</div>
-                          <div className="text-[10px] opacity-85">{s.desc}</div>
+                          <div className="text-sm font-semibold">{s.label}</div>
+                          <div className="text-xs opacity-90">{s.desc}</div>
                         </button>
                       );
                     })}
