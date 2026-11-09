@@ -175,3 +175,5 @@ export const CurriculumView: React.FC<CurriculumViewProps> = ({ lang, onSelectFo
     </div>
   );
 };
+
+export default CurriculumView;

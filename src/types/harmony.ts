@@ -1,6 +1,19 @@
 export type VibeId = 'pop-ballad' | 'rnb-neosoul' | 'jazz-bossa' | 'cinematic-sad';
 export type SpiceLevel = 1 | 2 | 3;
-export type GroovePatternId = 'block' | 'ballad-arpeggio' | 'rnb-pulse' | 'bossa-nova';
+export type GroovePatternId =
+  | 'block'
+  | 'ballad-arpeggio'
+  | 'rnb-pulse'
+  | 'bossa-nova'
+  | 'dilla-swing'
+  | 'gospel-walk'
+  | 'cinematic-wave';
+export type VoicingTopology =
+  | 'ergonomic-split'
+  | 'rootless-a'
+  | 'rootless-b'
+  | 'drop-2'
+  | 'quartal';
 export type Language = 'vi' | 'en';
 
 export type RuleCategory =
@@ -124,6 +137,7 @@ export interface ProgressionState {
   rawInput: string;
   vibe: VibeId;
   spiceLevel: SpiceLevel;
+  voicingTopology?: VoicingTopology;
   originalChords: VoicedChord[];
   reharmonizedChords: VoicedChord[];
   scaleNotes: string[];

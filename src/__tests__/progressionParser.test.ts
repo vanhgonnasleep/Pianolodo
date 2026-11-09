@@ -35,4 +35,11 @@ describe('Progression Parser & Key Detector', () => {
     expect(transposeKeyRoot('C', 5)).toBe('F');
     expect(transposeKeyRoot('F', -2)).toBe('Eb');
   });
+
+  it('correctly spells notes in flat chord contexts even when home key is C (Audit Finding B2)', () => {
+    // Db7 (bII7 tritone sub in C) has notes Db, F, Ab, Cb/B
+    expect(spellNoteInKey(61, 'C', 'Db7')).toBe('Db4');
+    expect(spellNoteInKey(68, 'C', 'Fm')).toBe('Ab4');
+    expect(spellNoteInKey(70, 'C', 'Bbm')).toBe('Bb4');
+  });
 });

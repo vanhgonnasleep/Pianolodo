@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import { Language, VoicedChord } from '../types/harmony';
 import { pianoAudioEngine } from '../audio/pianoAudioEngine';
 import { t } from '../i18n/translations';
-import { Lock, Eye, Sparkles } from 'lucide-react';
+import { Lock, Eye, Sparkles, Hand } from 'lucide-react';
 
 interface Piano88KeyboardProps {
   activeChord: VoicedChord | null;
   previewChord?: VoicedChord | null;
   previewSource?: 'hover' | 'audition' | null;
+  liveMidis?: number[];
   lang?: Language;
 }
 
@@ -39,12 +40,14 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
   activeChord,
   previewChord = null,
   previewSource = null,
+  liveMidis = [],
   lang = 'vi',
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [showFingering, setShowFingering] = useState<boolean>(true);
 
   const whiteKeyWidth = 24;
-  const whiteKeyHeight = 130;
+  const whiteKeyHeight = 132;
   const blackKeyWidth = 14;
   const blackKeyHeight = 84;
 
@@ -67,6 +70,51 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
     () => new Set(previewChord?.rightHand.map((n) => n.midi) || []),
     [previewChord]
   );
+
+  const liveMidiSet = useMemo(() => new Set(liveMidis), [liveMidis]);
+
+  // Suggested Finger Numbering Map
+  const fingerMap = useMemo(() => {
+    const map = new Map<number, { finger: number; hand: 'L' | 'R' }>();
+    if (!activeChord) return map;
+
+    // Left hand fingering
+    const lhSorted = [...activeChord.leftHand].sort((a, b) => a.midi - b.midi);
+    if (lhSorted.length === 1) {
+      map.set(lhSorted[0].midi, { finger: 1, hand: 'L' });
+    } else if (lhSorted.length === 2) {
+      map.set(lhSorted[0].midi, { finger: 5, hand: 'L' }); // 5 on bass
+      map.set(lhSorted[1].midi, { finger: 1, hand: 'L' }); // 1 on fifth/octave
+    } else if (lhSorted.length >= 3) {
+      map.set(lhSorted[0].midi, { finger: 5, hand: 'L' });
+      map.set(lhSorted[1].midi, { finger: 3, hand: 'L' });
+      map.set(lhSorted[2].midi, { finger: 1, hand: 'L' });
+    }
+
+    // Right hand fingering
+    const rhSorted = [...activeChord.rightHand].sort((a, b) => a.midi - b.midi);
+    if (rhSorted.length === 1) {
+      map.set(rhSorted[0].midi, { finger: 1, hand: 'R' });
+    } else if (rhSorted.length === 2) {
+      map.set(rhSorted[0].midi, { finger: 1, hand: 'R' });
+      map.set(rhSorted[1].midi, { finger: 5, hand: 'R' });
+    } else if (rhSorted.length === 3) {
+      map.set(rhSorted[0].midi, { finger: 1, hand: 'R' });
+      map.set(rhSorted[1].midi, { finger: 3, hand: 'R' });
+      map.set(rhSorted[2].midi, { finger: 5, hand: 'R' });
+    } else if (rhSorted.length === 4) {
+      map.set(rhSorted[0].midi, { finger: 1, hand: 'R' });
+      map.set(rhSorted[1].midi, { finger: 2, hand: 'R' });
+      map.set(rhSorted[2].midi, { finger: 4, hand: 'R' });
+      map.set(rhSorted[3].midi, { finger: 5, hand: 'R' });
+    } else if (rhSorted.length >= 5) {
+      rhSorted.forEach((n, idx) => {
+        map.set(n.midi, { finger: Math.min(5, idx + 1), hand: 'R' });
+      });
+    }
+
+    return map;
+  }, [activeChord]);
 
   // Auto-scroll piano container to center active / preview chord
   useEffect(() => {
@@ -128,83 +176,68 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
     }> = [];
 
     const getKeyCenter = (midi: number) => {
-      const k = ALL_88_KEYS.find((item) => item.midi === midi);
-      if (!k) return 0;
-      if (!k.isBlack) {
-        return k.whiteIndex * whiteKeyWidth + whiteKeyWidth / 2;
-      } else {
-        const prevW = ALL_88_KEYS.slice(0, ALL_88_KEYS.indexOf(k))
-          .reverse()
-          .find((item) => !item.isBlack);
-        const prevWIdx = prevW ? prevW.whiteIndex : 0;
-        return (prevWIdx + 1) * whiteKeyWidth;
+      const keyObj = ALL_88_KEYS.find((k) => k.midi === midi);
+      if (!keyObj) return 0;
+      if (!keyObj.isBlack) {
+        return keyObj.whiteIndex * whiteKeyWidth + whiteKeyWidth / 2;
       }
+      const prevWhite = ALL_88_KEYS.filter((k) => !k.isBlack && k.midi < midi).pop();
+      const prevWhiteIdx = prevWhite ? prevWhite.whiteIndex : 0;
+      return (prevWhiteIdx + 1) * whiteKeyWidth;
     };
 
-    // Right-Hand Voice Leading connections
-    const currentRh = activeChord.rightHand.map((n) => n.midi).sort((a, b) => a - b);
-    const previewRh = previewChord.rightHand.map((n) => n.midi).sort((a, b) => a - b);
+    const previewDiff = previewChord.voiceLeading;
+    if (previewDiff) {
+      previewDiff.keptNotes.forEach((noteStr) => {
+        const found = previewChord.rightHand.find((n) => n.noteName === noteStr);
+        if (found) {
+          const x = getKeyCenter(found.midi);
+          arcs.push({
+            x1: x,
+            x2: x,
+            color: '#10B981',
+            isKept: true,
+            semitones: 0,
+          });
+        }
+      });
 
-    previewRh.forEach((pMidi, idx) => {
-      const cMidi = currentRh[idx] ?? currentRh[0];
-      if (cMidi !== undefined) {
-        arcs.push({
-          x1: getKeyCenter(cMidi),
-          x2: getKeyCenter(pMidi),
-          color: '#D97706',
-          isKept: cMidi === pMidi,
-          semitones: pMidi - cMidi,
-        });
-      }
-    });
+      previewDiff.movedNotes.forEach((move) => {
+        const fromFound = activeChord.rightHand.find((n) => n.noteName === move.fromNote);
+        const toFound = previewChord.rightHand.find((n) => n.noteName === move.toNote);
+        if (fromFound && toFound) {
+          const x1 = getKeyCenter(fromFound.midi);
+          const x2 = getKeyCenter(toFound.midi);
+          const color = Math.abs(move.semitones) <= 2 ? '#3B82F6' : '#EF4444';
+          arcs.push({
+            x1,
+            x2,
+            color,
+            isKept: false,
+            semitones: move.semitones,
+          });
+        }
+      });
+    }
 
     return arcs;
   }, [activeChord, previewChord]);
 
   const handlePlayKey = (midi: number) => {
-    const note = ALL_88_KEYS.find((k) => k.midi === midi);
-    if (!note) return;
-    const dummyChord: VoicedChord = {
-      id: `single-${midi}`,
-      symbol: note.noteName,
-      romanDegree: '',
-      functionRole: 'primary',
-      leftHand: [],
-      rightHand: [
-        {
-          noteName: note.noteName,
-          pitchClass: note.noteName.slice(0, -1),
-          midi,
-          hand: 'right',
-          role: 'root',
-        },
-      ],
-      voiceLeading: { keptNotes: [], movedNotes: [], smoothnessScore: 100 },
-      explanation: {
-        ruleId: '',
-        title: '',
-        titleEn: '',
-        whySmooth: '',
-        whySmoothEn: '',
-        fingerTip: '',
-        fingerTipEn: '',
-        emotionTag: '',
-        emotionTagEn: '',
-      },
-      beats: 1,
-    };
-    pianoAudioEngine.playVoicedChord(dummyChord, 'block');
+    const keyObj = ALL_88_KEYS.find((k) => k.midi === midi);
+    if (!keyObj) return;
+    pianoAudioEngine.playNote(keyObj.noteName, '4n');
   };
 
   return (
-    <div className="bg-[#FFFFFF] p-4 md:p-6 border border-[#E5DFD7] rounded-2xl shadow-sm space-y-3">
+    <div className="bg-[#FFFFFF] dark:bg-[#1C1917] p-4 md:p-6 border border-[#E5DFD7] dark:border-[#292524] rounded-2xl shadow-sm space-y-3 transition-colors">
       {/* Legend & Active Voicing Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">
-          <span className="font-bold text-[#1C1917] flex items-center gap-1.5">
+          <span className="font-bold text-[#1C1917] dark:text-[#F5F5F4] flex items-center gap-1.5 font-serif">
             <span>{t('pianoTitle', lang)}</span>
             {previewChord && (
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309] font-mono text-[11px] font-bold border border-[#FDE68A] animate-pulse">
+              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FEF3C7] dark:bg-[#78350F]/40 text-[#B45309] dark:text-[#F59E0B] font-mono text-[11px] font-bold border border-[#FDE68A] dark:border-[#D97706]/40 animate-pulse">
                 {previewSource === 'audition' ? (
                   <Sparkles className="w-3 h-3 text-[#D97706]" />
                 ) : (
@@ -220,21 +253,21 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
             )}
           </span>
 
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1.5 font-semibold text-[#2563EB]">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-1.5 font-semibold text-[#2563EB] dark:text-[#60A5FA]">
               <span className="w-3 h-3 rounded-full bg-[#2563EB] inline-block shadow-xs" />
               {t('leftHand', lang)}
             </span>
-            <span className="flex items-center gap-1.5 font-semibold text-[#D97706]">
+            <span className="flex items-center gap-1.5 font-semibold text-[#D97706] dark:text-[#F59E0B]">
               <span className="w-3 h-3 rounded-full bg-[#D97706] inline-block shadow-xs" />
               {t('rightHand', lang)}
             </span>
-            <span className="flex items-center gap-1.5 text-[#78716C]">
+            <span className="flex items-center gap-1.5 text-[#78716C] dark:text-[#A8A29E]">
               <Lock className="w-3.5 h-3.5 text-[#D97706]" />
               {t('keptNotesLegend', lang)}
             </span>
             {previewChord && (
-              <span className="flex items-center gap-1.5 font-semibold text-[#B45309]">
+              <span className="flex items-center gap-1.5 font-semibold text-[#B45309] dark:text-[#F59E0B]">
                 <span className="w-3 h-3 rounded-full border-2 border-dashed border-[#D97706] bg-[#FEF3C7] inline-block" />
                 {lang === 'vi' ? 'Ghost Voicing' : 'Ghost Preview'}
               </span>
@@ -242,15 +275,30 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
           </div>
         </div>
 
-        <div className="text-[#78716C] text-xs font-mono">
-          {t('fingerZone', lang)}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowFingering((prev) => !prev)}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
+              showFingering
+                ? 'bg-[#FEF3C7] dark:bg-[#78350F]/50 text-[#92400E] dark:text-[#FDE68A] border-[#FDE68A] dark:border-[#D97706]/40'
+                : 'bg-[#FAF8F5] dark:bg-[#292524] text-[#78716C] dark:text-[#A8A29E] border-[#E5DFD7] dark:border-[#38332E]'
+            }`}
+            title="Bật/tắt số ngón tay gợi ý (1-5)"
+          >
+            <Hand className="w-3.5 h-3.5" />
+            <span>{lang === 'vi' ? 'Số ngón tay (1-5)' : 'Finger Numbers'}</span>
+          </button>
+
+          <div className="text-[#78716C] dark:text-[#A8A29E] text-xs font-mono hidden sm:block">
+            {t('fingerZone', lang)}
+          </div>
         </div>
       </div>
 
       {/* Piano Scrollable Viewport with Voice-Leading SVG Overlay */}
       <div
         ref={containerRef}
-        className="overflow-x-auto rounded-xl border border-[#E5DFD7] bg-[#FAF8F5] p-3 shadow-inner scrollbar-thin relative"
+        className="overflow-x-auto rounded-xl border border-[#E5DFD7] dark:border-[#292524] bg-[#FAF8F5] dark:bg-[#0C0A09] p-3 shadow-inner scrollbar-thin relative"
       >
         <div
           className="relative select-none mx-auto"
@@ -302,14 +350,17 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
               const isRH = rhMidis.has(k.midi);
               const isGhostLH = !isLH && previewLhMidis.has(k.midi);
               const isGhostRH = !isRH && previewRhMidis.has(k.midi);
+              const isLive = liveMidiSet.has(k.midi);
               const isKept = keptMidis.has(k.midi);
               const moved = movedMap.get(k.midi);
+              const fingering = fingerMap.get(k.midi);
 
-              let bgClass = 'bg-[#FEFDFB] hover:bg-[#F5F1EB] text-[#44403C] border-[#D6D0C7]';
-              if (isLH) bgClass = 'bg-[#2563EB] text-white font-bold shadow-md shadow-[#2563EB]/25 border-[#1D4ED8]';
-              if (isRH) bgClass = 'bg-[#D97706] text-white font-bold shadow-md shadow-[#D97706]/25 border-[#B45309]';
-              if (isGhostLH) bgClass = 'bg-[#DBEAFE] text-[#1E40AF] font-bold border-2 border-dashed border-[#2563EB] ghost-key-anim';
-              if (isGhostRH) bgClass = 'bg-[#FEF3C7] text-[#92400E] font-bold border-2 border-dashed border-[#D97706] ghost-key-anim';
+              let keyClasses = 'key-3d-white text-[#44403C] hover:bg-[#F5F1EB]';
+              if (isLH) keyClasses = 'key-3d-active-lh text-white font-bold';
+              else if (isRH) keyClasses = 'key-3d-active-rh text-white font-bold';
+              else if (isLive) keyClasses = 'bg-[#10B981] text-white font-bold shadow-md';
+              else if (isGhostLH) keyClasses = 'bg-[#DBEAFE] text-[#1E40AF] font-bold border-2 border-dashed border-[#2563EB] ghost-key-anim';
+              else if (isGhostRH) keyClasses = 'bg-[#FEF3C7] text-[#92400E] font-bold border-2 border-dashed border-[#D97706] ghost-key-anim';
 
               return (
                 <div
@@ -320,14 +371,21 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
                     width: `${whiteKeyWidth}px`,
                     height: `${whiteKeyHeight}px`,
                   }}
-                  className={`absolute top-0 rounded-b-md border-r border-b border-l cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 active:scale-y-[0.98] origin-top ${bgClass}`}
+                  className={`absolute top-0 rounded-b-md border-r border-l cursor-pointer flex flex-col justify-end items-center pb-2 transition duration-75 active:scale-y-[0.98] origin-top ${keyClasses}`}
                 >
-                  {isKept && (
+                  {/* Finger Number Badge */}
+                  {showFingering && fingering && (
+                    <div className="absolute top-1 bg-white/90 dark:bg-black/80 text-[#1C1917] dark:text-[#F5F5F4] text-[10px] font-mono font-bold px-1 rounded-full shadow-xs">
+                      {fingering.finger}
+                    </div>
+                  )}
+
+                  {isKept && !showFingering && (
                     <div className="absolute top-1 bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A] text-[10px] rounded-full p-0.5 shadow-xs">
                       <Lock className="w-2.5 h-2.5" />
                     </div>
                   )}
-                  {moved !== undefined && (
+                  {moved !== undefined && !showFingering && (
                     <div className="absolute top-1 bg-[#1C1917] text-[#FDE68A] font-mono text-[10px] font-bold px-1 rounded shadow-xs">
                       {moved > 0 ? `+${moved}` : moved}
                     </div>
@@ -350,16 +408,19 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
               const isRH = rhMidis.has(k.midi);
               const isGhostLH = !isLH && previewLhMidis.has(k.midi);
               const isGhostRH = !isRH && previewRhMidis.has(k.midi);
+              const isLive = liveMidiSet.has(k.midi);
               const isKept = keptMidis.has(k.midi);
               const moved = movedMap.get(k.midi);
+              const fingering = fingerMap.get(k.midi);
 
               const leftPos = (prevWhite.whiteIndex + 1) * whiteKeyWidth - blackKeyWidth / 2;
 
-              let bgClass = 'bg-[#1C1917] hover:bg-[#292524] text-[#E7E5E4] border-[#0C0A09]';
-              if (isLH) bgClass = 'bg-[#1D4ED8] text-white border-[#2563EB] shadow-md';
-              if (isRH) bgClass = 'bg-[#B45309] text-white border-[#D97706] shadow-md';
-              if (isGhostLH) bgClass = 'bg-[#1E3A8A] text-white border-2 border-dashed border-[#60A5FA] ghost-key-anim';
-              if (isGhostRH) bgClass = 'bg-[#78350F] text-white border-2 border-dashed border-[#FBBF24] ghost-key-anim';
+              let keyClasses = 'key-3d-black text-[#E7E5E4]';
+              if (isLH) keyClasses = 'key-3d-active-lh text-white';
+              else if (isRH) keyClasses = 'key-3d-active-rh text-white';
+              else if (isLive) keyClasses = 'bg-[#10B981] text-white font-bold shadow-md';
+              else if (isGhostLH) keyClasses = 'bg-[#1E3A8A] text-white border-2 border-dashed border-[#60A5FA] ghost-key-anim';
+              else if (isGhostRH) keyClasses = 'bg-[#78350F] text-white border-2 border-dashed border-[#FBBF24] ghost-key-anim';
 
               return (
                 <div
@@ -370,14 +431,21 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
                     width: `${blackKeyWidth}px`,
                     height: `${blackKeyHeight}px`,
                   }}
-                  className={`absolute top-0 z-10 rounded-b border cursor-pointer flex flex-col justify-end items-center pb-1.5 transition duration-75 shadow-md active:scale-y-[0.98] origin-top ${bgClass}`}
+                  className={`absolute top-0 z-10 rounded-b cursor-pointer flex flex-col justify-end items-center pb-1.5 transition duration-75 origin-top ${keyClasses}`}
                 >
-                  {isKept && (
+                  {/* Finger Number Badge */}
+                  {showFingering && fingering && (
+                    <div className="absolute top-0.5 bg-white/90 dark:bg-black/80 text-[#1C1917] dark:text-[#F5F5F4] text-[9px] font-mono font-bold px-0.5 rounded shadow-xs">
+                      {fingering.finger}
+                    </div>
+                  )}
+
+                  {isKept && !showFingering && (
                     <div className="absolute top-0.5 bg-[#FEF3C7] text-[#B45309] text-[9px] rounded-full p-0.5">
                       <Lock className="w-2 h-2" />
                     </div>
                   )}
-                  {moved !== undefined && (
+                  {moved !== undefined && !showFingering && (
                     <div className="absolute top-0.5 bg-[#1C1917] text-[#FDE68A] font-mono text-[9px] font-bold px-0.5 rounded">
                       {moved > 0 ? `+${moved}` : moved}
                     </div>

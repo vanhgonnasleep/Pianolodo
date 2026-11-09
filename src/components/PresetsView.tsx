@@ -114,3 +114,5 @@ export const PresetsView: React.FC<PresetsViewProps> = ({
     </div>
   );
 };
+
+export default PresetsView;

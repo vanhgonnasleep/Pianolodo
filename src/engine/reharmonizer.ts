@@ -1,5 +1,5 @@
 import { Note } from '@tonaljs/tonal';
-import { ProgressionState, SpiceLevel, VibeId } from '../types/harmony';
+import { ProgressionState, SpiceLevel, VibeId, VoicingTopology } from '../types/harmony';
 import { VIBE_PROFILES } from '../data/curriculum';
 import { parseProgressionInput } from './progressionParser';
 import { voiceChordSequence } from './voiceLeadingSolver';
@@ -31,7 +31,8 @@ export function buildProgressionState(
   rawInput: string,
   vibe: VibeId,
   spiceLevel: SpiceLevel,
-  preferredKeyRoot?: string
+  preferredKeyRoot?: string,
+  voicingTopology: VoicingTopology = 'ergonomic-split'
 ): ProgressionState {
   const parsed = parseProgressionInput(rawInput, preferredKeyRoot);
   const keyRoot = parsed.keyRoot;
@@ -47,7 +48,7 @@ export function buildProgressionState(
     ruleId: 'ext-maj9',
     beats: 4,
   }));
-  const originalChords = voiceChordSequence(originalSequence, keyRoot);
+  const originalChords = voiceChordSequence(originalSequence, keyRoot, voicingTopology);
 
   // 2. Build Reharmonized Sequence
   interface IntermediateChord {
@@ -190,7 +191,7 @@ export function buildProgressionState(
     }
   }
 
-  const reharmonizedChords = voiceChordSequence(finalSequence, keyRoot);
+  const reharmonizedChords = voiceChordSequence(finalSequence, keyRoot, voicingTopology);
 
   return {
     keyRoot,
@@ -198,6 +199,7 @@ export function buildProgressionState(
     rawInput,
     vibe,
     spiceLevel,
+    voicingTopology,
     originalChords,
     reharmonizedChords,
     scaleNotes,

@@ -238,3 +238,5 @@ export const MidiSettingsView: React.FC<MidiSettingsViewProps> = ({
     </div>
   );
 };
+
+export default MidiSettingsView;

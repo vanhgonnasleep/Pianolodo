@@ -241,3 +241,5 @@ export const FocusMusicView: React.FC<FocusMusicViewProps> = ({
     </div>
   );
 };
+
+export default FocusMusicView;

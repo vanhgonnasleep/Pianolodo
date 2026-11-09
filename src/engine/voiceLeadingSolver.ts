@@ -1,16 +1,97 @@
 import { Chord, Note } from '@tonaljs/tonal';
-import { NoteInfo, VoiceLeadingDiff, VoicedChord } from '../types/harmony';
+import { NoteInfo, VoiceLeadingDiff, VoicedChord, VoicingTopology } from '../types/harmony';
 import { spellNoteInKey } from './progressionParser';
 import { getRuleById } from '../data/curriculum';
 
-export function getRightHandPitchClasses(symbol: string): string[] {
+export function getRightHandPitchClasses(
+  symbol: string,
+  topology: VoicingTopology = 'ergonomic-split'
+): string[] {
   const parts = symbol.split('/');
   const main = parts[0];
   const c = Chord.get(main);
   const root = c.tonic || main.replace(/[^A-G#b]/g, '');
   if (!root) return ['C', 'E', 'G'];
 
-  // Special Bill Evans / Berklee rootless / color voicings
+  const isMinor = main.includes('m') && !main.includes('maj');
+  const isDom =
+    (main.includes('7') || main.includes('9') || main.includes('13')) &&
+    !main.includes('maj') &&
+    !isMinor;
+
+  if (topology === 'rootless-a') {
+    // Bill Evans Type A: 3 - 5/13 - 7 - 9
+    if (isMinor) {
+      const b3 = Note.transpose(root, '3m');
+      const p5 = Note.transpose(root, '5P');
+      const b7 = Note.transpose(root, '7m');
+      const m9 = Note.transpose(root, '9M');
+      return [b3, p5, b7, m9].map((n) => Note.pitchClass(n));
+    }
+    if (isDom) {
+      const m3 = Note.transpose(root, '3M');
+      const m13 = Note.transpose(root, '13M');
+      const b7 = Note.transpose(root, '7m');
+      const m9 = Note.transpose(root, '9M');
+      return [m3, m13, b7, m9].map((n) => Note.pitchClass(n));
+    }
+    // Major
+    const m3 = Note.transpose(root, '3M');
+    const p5 = Note.transpose(root, '5P');
+    const m7 = Note.transpose(root, '7M');
+    const m9 = Note.transpose(root, '9M');
+    return [m3, p5, m7, m9].map((n) => Note.pitchClass(n));
+  }
+
+  if (topology === 'rootless-b') {
+    // Bill Evans Type B: 7 - 9 - 3 - 5/13
+    if (isMinor) {
+      const b7 = Note.transpose(root, '7m');
+      const m9 = Note.transpose(root, '9M');
+      const b3 = Note.transpose(root, '3m');
+      const p5 = Note.transpose(root, '5P');
+      return [b7, m9, b3, p5].map((n) => Note.pitchClass(n));
+    }
+    if (isDom) {
+      const b7 = Note.transpose(root, '7m');
+      const m9 = Note.transpose(root, '9M');
+      const m3 = Note.transpose(root, '3M');
+      const m13 = Note.transpose(root, '13M');
+      return [b7, m9, m3, m13].map((n) => Note.pitchClass(n));
+    }
+    // Major
+    const m7 = Note.transpose(root, '7M');
+    const m9 = Note.transpose(root, '9M');
+    const m3 = Note.transpose(root, '3M');
+    const p5 = Note.transpose(root, '5P');
+    return [m7, m9, m3, p5].map((n) => Note.pitchClass(n));
+  }
+
+  if (topology === 'quartal') {
+    // McCoy Tyner Stacked 4ths
+    if (isMinor) {
+      const n1 = Note.transpose(root, '9M');
+      const n2 = Note.transpose(n1, '4P');
+      const n3 = Note.transpose(n2, '4P');
+      const n4 = Note.transpose(n3, '4P');
+      return [n1, n2, n3, n4].map((n) => Note.pitchClass(n));
+    }
+    if (isDom) {
+      const n1 = Note.transpose(root, '7m');
+      const n2 = Note.transpose(n1, '4P');
+      const n3 = Note.transpose(n2, '4P');
+      const n4 = Note.transpose(n3, '4P');
+      return [n1, n2, n3, n4].map((n) => Note.pitchClass(n));
+    }
+    // Major
+    const n1 = Note.transpose(root, '7M');
+    const n2 = Note.transpose(n1, '4P');
+    const n3 = Note.transpose(n2, '4P');
+    const n4 = Note.transpose(n3, '4P');
+    return [n1, n2, n3, n4].map((n) => Note.pitchClass(n));
+  }
+
+  // Default ergonomic-split: Special Bill Evans / Berklee rootless / color voicings
   if (symbol.includes('13')) {
     // b7, 9, 3, 13
     const b7 = Note.transpose(root, '7m');
@@ -97,7 +178,10 @@ export function getRightHandPitchClasses(symbol: string): string[] {
   return notes.map((n) => Note.pitchClass(n));
 }
 
-function generateCandidateVoicings(pcs: string[]): number[][] {
+function generateCandidateVoicings(
+  pcs: string[],
+  topology: VoicingTopology = 'ergonomic-split'
+): number[][] {
   const candidates: number[][] = [];
   const basePcs = pcs.map((p) => ((Note.midi(`${p}4`)! % 12) + 12) % 12);
   const n = basePcs.length;
@@ -126,8 +210,20 @@ function generateCandidateVoicings(pcs: string[]): number[][] {
         pitches.push(p);
       }
 
-      if (valid && pitches[0] >= 53 && pitches[pitches.length - 1] <= 81) {
-        candidates.push(pitches);
+      if (valid && pitches[0] >= 50 && pitches[pitches.length - 1] <= 84) {
+        if (topology === 'drop-2' && pitches.length >= 4) {
+          // Drop-2: take second note from top, drop it down one octave
+          const sortedPitches = [...pitches].sort((a, b) => a - b);
+          const secondFromTop = sortedPitches[sortedPitches.length - 2];
+          const dropped = secondFromTop - 12;
+          const remaining = sortedPitches.filter((_, idx) => idx !== sortedPitches.length - 2);
+          const drop2Candidate = [dropped, ...remaining].sort((a, b) => a - b);
+          if (drop2Candidate[0] >= 40 && drop2Candidate[drop2Candidate.length - 1] <= 84) {
+            candidates.push(drop2Candidate);
+          }
+        } else {
+          candidates.push(pitches);
+        }
       }
     }
   }
@@ -161,12 +257,31 @@ function solveOptimalVoicing(
   for (const cand of candidates) {
     let cost = 0;
     let totalSemitones = 0;
-    const len = Math.min(prevRightHandMidi.length, cand.length);
 
-    for (let i = 0; i < len; i++) {
-      const diff = Math.abs(cand[i] - prevRightHandMidi[i]);
-      totalSemitones += diff;
-      if (diff > 4) cost += 15;
+    // Calculate minimum voice-to-voice distance with guide-tone & common-tone affinity
+    const usedCand = new Set<number>();
+    for (const pMidi of prevRightHandMidi) {
+      let closestDist = Infinity;
+      let closestIdx = -1;
+      for (let cIdx = 0; cIdx < cand.length; cIdx++) {
+        if (usedCand.has(cIdx)) continue;
+        const dist = Math.abs(cand[cIdx] - pMidi);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestIdx = cIdx;
+        }
+      }
+      if (closestIdx !== -1) {
+        usedCand.add(closestIdx);
+        totalSemitones += closestDist;
+        if (closestDist === 0) {
+          cost -= 4; // Reward kept common tone
+        } else if (closestDist <= 2) {
+          cost -= 2; // Reward smooth stepwise resolution (guide-tone 7th -> 3rd)
+        } else if (closestDist > 4) {
+          cost += 10; // Penalize wide leap
+        }
+      }
     }
 
     // Cost function: minimal semitone distance + gentle center-of-gravity anchor around 64
@@ -185,7 +300,8 @@ function solveOptimalVoicing(
 function computeVoiceLeadingDiff(
   prevMidis: number[] | undefined,
   currMidis: number[],
-  keyRoot: string
+  keyRoot: string,
+  symbol?: string
 ): VoiceLeadingDiff {
   if (!prevMidis || prevMidis.length === 0) {
     return {
@@ -206,7 +322,7 @@ function computeVoiceLeadingDiff(
     const cMidi = currMidis[cIdx];
     const pIdx = prevMidis.findIndex((pMidi, idx) => !prevUsed.has(idx) && pMidi === cMidi);
     if (pIdx !== -1) {
-      keptNotes.push(spellNoteInKey(cMidi, keyRoot));
+      keptNotes.push(spellNoteInKey(cMidi, keyRoot, symbol));
       prevUsed.add(pIdx);
       currUsed.add(cIdx);
     }
@@ -235,7 +351,7 @@ function computeVoiceLeadingDiff(
       totalShift += Math.abs(semitones);
       movedNotes.push({
         fromNote: spellNoteInKey(pMidi, keyRoot),
-        toNote: spellNoteInKey(cMidi, keyRoot),
+        toNote: spellNoteInKey(cMidi, keyRoot, symbol),
         semitones,
       });
       prevUsed.add(bestPIdx);
@@ -255,7 +371,8 @@ function computeVoiceLeadingDiff(
 export function voiceSingleChord(
   symbol: string,
   keyRoot: string,
-  prevRightHandMidi?: number[]
+  prevRightHandMidi?: number[],
+  topology: VoicingTopology = 'ergonomic-split'
 ): {
   leftHand: NoteInfo[];
   rightHand: NoteInfo[];
@@ -274,30 +391,46 @@ export function voiceSingleChord(
 
   const leftHand: NoteInfo[] = [];
 
+  const isDim =
+    main.includes('dim') ||
+    main.includes('m7b5') ||
+    main.includes('b5') ||
+    main.includes('°') ||
+    main.includes('ø') ||
+    chordInfo.quality === 'Diminished';
+  const isAug =
+    main.includes('aug') ||
+    main.includes('+') ||
+    main.includes('#5') ||
+    chordInfo.quality === 'Augmented';
+
   if (slashBass) {
     // Slash chord: clean single bass note or bass + octave to avoid muddy cluster
     leftHand.push({
-      noteName: spellNoteInKey(bassMidi, keyRoot),
+      noteName: spellNoteInKey(bassMidi, keyRoot, symbol),
       pitchClass: bassPitchClass,
       midi: bassMidi,
       hand: 'left',
       role: 'root',
     });
   } else {
-    // Normal chord: Root + 5th (safe against Low Interval Limit)
+    // Normal chord: Root
     leftHand.push({
-      noteName: spellNoteInKey(bassMidi, keyRoot),
+      noteName: spellNoteInKey(bassMidi, keyRoot, symbol),
       pitchClass: bassPitchClass,
       midi: bassMidi,
       hand: 'left',
       role: 'root',
     });
 
-    const fifthPitchClass = Note.transpose(bassPitchClass, '5P');
-    const fifthMidi = bassMidi + 7;
+    const fifthInterval = isDim ? '5d' : isAug ? '5A' : '5P';
+    const fifthSemitones = isDim ? 6 : isAug ? 8 : 7;
+    const fifthPitchClass = Note.pitchClass(Note.transpose(bassPitchClass, fifthInterval));
+    const fifthMidi = bassMidi + fifthSemitones;
+
     leftHand.push({
-      noteName: spellNoteInKey(fifthMidi, keyRoot),
-      pitchClass: Note.pitchClass(fifthPitchClass),
+      noteName: spellNoteInKey(fifthMidi, keyRoot, symbol),
+      pitchClass: fifthPitchClass,
       midi: fifthMidi,
       hand: 'left',
       role: 'fifth',
@@ -305,20 +438,28 @@ export function voiceSingleChord(
   }
 
   // 2. Right Hand Voicing
-  const rightPcs = getRightHandPitchClasses(symbol);
-  const candidates = generateCandidateVoicings(rightPcs);
+  const rightPcs = getRightHandPitchClasses(symbol, topology);
+  const candidates = generateCandidateVoicings(rightPcs, topology);
   const bestRightMidis = solveOptimalVoicing(candidates, prevRightHandMidi);
 
   const rightHand: NoteInfo[] = bestRightMidis.map((midi) => {
     const pc = Note.pitchClass(Note.fromMidi(midi));
     let role: NoteInfo['role'] = 'extension';
     if (pc === rootName) role = 'root';
-    else if (pc === Note.pitchClass(Note.transpose(rootName, '3M')) || pc === Note.pitchClass(Note.transpose(rootName, '3m'))) role = 'third';
+    else if (
+      pc === Note.pitchClass(Note.transpose(rootName, '3M')) ||
+      pc === Note.pitchClass(Note.transpose(rootName, '3m'))
+    )
+      role = 'third';
     else if (pc === Note.pitchClass(Note.transpose(rootName, '5P'))) role = 'fifth';
-    else if (pc === Note.pitchClass(Note.transpose(rootName, '7M')) || pc === Note.pitchClass(Note.transpose(rootName, '7m'))) role = 'seventh';
+    else if (
+      pc === Note.pitchClass(Note.transpose(rootName, '7M')) ||
+      pc === Note.pitchClass(Note.transpose(rootName, '7m'))
+    )
+      role = 'seventh';
 
     return {
-      noteName: spellNoteInKey(midi, keyRoot),
+      noteName: spellNoteInKey(midi, keyRoot, symbol),
       pitchClass: pc,
       midi,
       hand: 'right',
@@ -327,7 +468,7 @@ export function voiceSingleChord(
   });
 
   // 3. Voice Leading Diff
-  const voiceLeading = computeVoiceLeadingDiff(prevRightHandMidi, bestRightMidis, keyRoot);
+  const voiceLeading = computeVoiceLeadingDiff(prevRightHandMidi, bestRightMidis, keyRoot, symbol);
 
   return {
     leftHand,
@@ -345,13 +486,14 @@ export function voiceChordSequence(
     ruleId: string;
     beats?: number;
   }>,
-  keyRoot: string
+  keyRoot: string,
+  topology: VoicingTopology = 'ergonomic-split'
 ): VoicedChord[] {
   const result: VoicedChord[] = [];
   let prevRightMidi: number[] | undefined = undefined;
 
   chords.forEach((ch, idx) => {
-    const voiced = voiceSingleChord(ch.symbol, keyRoot, prevRightMidi);
+    const voiced = voiceSingleChord(ch.symbol, keyRoot, prevRightMidi, topology);
     prevRightMidi = voiced.rightHand.map((n) => n.midi);
 
     const rule = getRuleById(ch.ruleId);

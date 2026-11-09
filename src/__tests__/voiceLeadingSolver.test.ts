@@ -53,4 +53,24 @@ describe('Smooth Two-Hand Voice-Leading Solver', () => {
       expect(avgMidi).toBeLessThanOrEqual(76);    // <= E5
     }
   });
+
+  it('correctly voices diminished and half-diminished chords with a diminished 5th in LH instead of perfect 5th (Audit Finding B1)', () => {
+    const voiced = voiceChordSequence(
+      [
+        { symbol: 'Bm7b5', romanDegree: 'viiø7', functionRole: 'primary', ruleId: 'ext-min9' },
+        { symbol: 'C#dim7', romanDegree: 'vii°7', functionRole: 'primary', ruleId: 'dim-passing' },
+      ],
+      'C'
+    );
+    // For Bm7b5 (B, D, F, A): Left hand must play B and F (diminished 5th = 6 semitones), NOT F# (7 semitones)
+    const bm7b5LH = voiced[0].leftHand;
+    expect(bm7b5LH).toHaveLength(2);
+    expect(bm7b5LH[0].pitchClass).toBe('B');
+    expect(bm7b5LH[1].pitchClass).toBe('F');
+    expect(bm7b5LH[1].midi - bm7b5LH[0].midi).toBe(6);
+
+    // For C#dim7 (C#, E, G, Bb): Left hand must play C# and G (diminished 5th = 6 semitones), NOT G# (7 semitones)
+    const cSharpDimLH = voiced[1].leftHand;
+    expect(cSharpDimLH[1].midi - cSharpDimLH[0].midi).toBe(6);
+  });
 });

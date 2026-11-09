@@ -23,7 +23,11 @@ export function transposeKeyRoot(keyRoot: string, semitones: number): string {
   return PREFERRED_MAJOR_KEYS[targetMidi];
 }
 
-export function spellNoteInKey(midiOrNote: number | string, keyRoot: string): string {
+export function spellNoteInKey(
+  midiOrNote: number | string,
+  keyRoot: string,
+  chordSymbol?: string
+): string {
   let midiVal: number;
   let octave: number;
 
@@ -33,7 +37,7 @@ export function spellNoteInKey(midiOrNote: number | string, keyRoot: string): st
   } else {
     const parsedMidi = Note.midi(midiOrNote);
     if (parsedMidi === null) {
-      if (isFlatKey(keyRoot)) {
+      if (isFlatKey(keyRoot) || (chordSymbol && (chordSymbol.includes('b') || chordSymbol.startsWith('F')))) {
         return midiOrNote
           .replace('A#', 'Bb')
           .replace('D#', 'Eb')
@@ -49,7 +53,25 @@ export function spellNoteInKey(midiOrNote: number | string, keyRoot: string): st
   }
 
   const pc = ((midiVal % 12) + 12) % 12;
-  const name = isFlatKey(keyRoot) ? PITCH_CLASS_NAMES_FLAT[pc] : PITCH_CLASS_NAMES_SHARP[pc];
+
+  // Contextual check: If chordSymbol provided, check chord's explicit note spelling first
+  if (chordSymbol) {
+    const mainSymbol = chordSymbol.split('/')[0];
+    const c = Chord.get(mainSymbol);
+    if (c.notes && c.notes.length > 0) {
+      for (const chordNote of c.notes) {
+        const chordNoteMidi = Note.midi(`${chordNote}4`);
+        if (chordNoteMidi !== null && ((chordNoteMidi % 12) + 12) % 12 === pc) {
+          return `${chordNote}${octave}`;
+        }
+      }
+    }
+  }
+
+  const shouldUseFlats =
+    isFlatKey(keyRoot) ||
+    Boolean(chordSymbol && (chordSymbol.includes('b') || chordSymbol.startsWith('Fm')));
+  const name = shouldUseFlats ? PITCH_CLASS_NAMES_FLAT[pc] : PITCH_CLASS_NAMES_SHARP[pc];
   return `${name}${octave}`;
 }
 

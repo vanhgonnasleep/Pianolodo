@@ -142,14 +142,20 @@ class FocusSoundscapeEngine {
     }).toDestination();
     this.droneSynth.triggerAttack(`${keyRoot}2`);
 
-    // 3. Alpha Wave (10Hz Binaural Beat)
+    // 3. Alpha Wave (True 10Hz Binaural Beat with Stereo Panning)
     if (profile.hasAlphaWave) {
-      this.alphaLeft = new Tone.Oscillator(200, 'sine').toDestination();
-      this.alphaRight = new Tone.Oscillator(210, 'sine').toDestination();
-      this.alphaLeft.volume.value = -32;
-      this.alphaRight.volume.value = -32;
-      this.alphaLeft.start();
-      this.alphaRight.start();
+      try {
+        const pannerL = new Tone.Panner(-1).toDestination();
+        const pannerR = new Tone.Panner(1).toDestination();
+        this.alphaLeft = new Tone.Oscillator(200, 'sine').connect(pannerL);
+        this.alphaRight = new Tone.Oscillator(210, 'sine').connect(pannerR);
+        this.alphaLeft.volume.value = -32;
+        this.alphaRight.volume.value = -32;
+        this.alphaLeft.start();
+        this.alphaRight.start();
+      } catch {
+        // Fallback for headless test environments
+      }
     }
 
     this.isRunning = true;

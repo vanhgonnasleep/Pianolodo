@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Language, VoicedChord } from '../types/harmony';
-import { Renderer, Stave, StaveNote, Formatter, StaveConnector, Voice } from 'vexflow';
+import { Renderer, Stave, StaveNote, Formatter, StaveConnector, Voice, Accidental } from 'vexflow';
 import { t } from '../i18n/translations';
 import { Music, CheckCircle2, ArrowRight, Copy, Check } from 'lucide-react';
 
@@ -64,6 +64,19 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
           duration: 'w',
         });
 
+        // Add Accidental modifiers for accurate sharp/flat rendering
+        activeChord.rightHand.forEach((n, idx) => {
+          if (n.pitchClass.includes('##')) {
+            trebleChordNote.addModifier(new Accidental('##'), idx);
+          } else if (n.pitchClass.includes('#')) {
+            trebleChordNote.addModifier(new Accidental('#'), idx);
+          } else if (n.pitchClass.includes('bb')) {
+            trebleChordNote.addModifier(new Accidental('bb'), idx);
+          } else if (n.pitchClass.includes('b')) {
+            trebleChordNote.addModifier(new Accidental('b'), idx);
+          }
+        });
+
         trebleChordNote.setStyle({ fillStyle: '#D97706', strokeStyle: '#D97706' });
 
         const trebleVoice = new Voice({ numBeats: 4, beatValue: 4 });
@@ -85,6 +98,19 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
           clef: 'bass',
           keys: lhKeys,
           duration: 'w',
+        });
+
+        // Add Accidental modifiers for accurate sharp/flat rendering
+        activeChord.leftHand.forEach((n, idx) => {
+          if (n.pitchClass.includes('##')) {
+            bassChordNote.addModifier(new Accidental('##'), idx);
+          } else if (n.pitchClass.includes('#')) {
+            bassChordNote.addModifier(new Accidental('#'), idx);
+          } else if (n.pitchClass.includes('bb')) {
+            bassChordNote.addModifier(new Accidental('bb'), idx);
+          } else if (n.pitchClass.includes('b')) {
+            bassChordNote.addModifier(new Accidental('b'), idx);
+          }
         });
 
         bassChordNote.setStyle({ fillStyle: '#2563EB', strokeStyle: '#2563EB' });

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, Suspense, lazy } from 'react';
 import {
   BridgeCandidate,
   GroovePatternId,
@@ -7,6 +7,7 @@ import {
   ProgressionOption,
   SpiceLevel,
   VibeId,
+  VoicingTopology,
 } from './types/harmony';
 import { buildProgressionState } from './engine/reharmonizer';
 import { insertBridgeChordAt } from './engine/bridgeSuggester';
@@ -24,12 +25,19 @@ import { Piano88Keyboard } from './components/Piano88Keyboard';
 import { NotationAndNotesPanel } from './components/NotationAndNotesPanel';
 import { ExplanationAndCurriculum } from './components/ExplanationAndCurriculum';
 import { FocusMusicModal } from './components/FocusMusicModal';
-import { CurriculumView } from './components/CurriculumView';
-import { PresetsView } from './components/PresetsView';
-import { FocusMusicView } from './components/FocusMusicView';
-import { MidiSettingsView } from './components/MidiSettingsView';
 import { useHoverPreview } from './hooks/useHoverPreview';
-import { ShieldCheck, Command } from 'lucide-react';
+import { useQwertyPiano } from './hooks/useQwertyPiano';
+import { downloadMidiFile } from './engine/midiExporter';
+import { serializeStudioStateToUrl, parseStudioStateFromUrl } from './engine/urlStateSync';
+import { ShieldCheck, Command, Check } from 'lucide-react';
+import { Note } from '@tonaljs/tonal';
+
+// Code-split Lazy Secondary Views for Optimized Bundle Size
+const CurriculumView = lazy(() => import('./components/CurriculumView'));
+const PresetsView = lazy(() => import('./components/PresetsView'));
+const FocusMusicView = lazy(() => import('./components/FocusMusicView'));
+const MidiSettingsView = lazy(() => import('./components/MidiSettingsView'));
+const PracticeGymView = lazy(() => import('./components/PracticeGymView'));
 
 export const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('vi');
@@ -38,7 +46,39 @@ export const App: React.FC = () => {
   const [keyRoot, setKeyRoot] = useState<string>('C');
   const [vibe, setVibe] = useState<VibeId>('pop-ballad');
   const [spiceLevel, setSpiceLevel] = useState<SpiceLevel>(1);
+  const [voicingTopology, setVoicingTopology] = useState<VoicingTopology>('ergonomic-split');
+  const [theoryDepth, setTheoryDepth] = useState<'beginner' | 'pro'>('pro');
   const [activeChordIndex, setActiveChordIndex] = useState<number>(0);
+
+  // Dual-Theme Studio System (Warm Ivory ↔ Dark OLED Stage Mode)
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('pianolodo_theme');
+      if (saved === 'dark' || saved === 'light') return saved;
+    }
+    return 'light';
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+      localStorage.setItem('pianolodo_theme', theme);
+    }
+  }, [theme]);
+
+  const handleToggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleToggleTheoryDepth = () => {
+    setTheoryDepth((prev) => (prev === 'beginner' ? 'pro' : 'beginner'));
+  };
 
   // Playback, Groove & Loop State
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -48,10 +88,17 @@ export const App: React.FC = () => {
   const [bpm, setBpm] = useState<number>(85);
   const [instrumentTone, setInstrumentTone] = useState<InstrumentToneType>('grand-piano');
   const [isLooping, setIsLooping] = useState<boolean>(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Modals
   const [isCurriculumDrawerOpen, setIsCurriculumDrawerOpen] = useState<boolean>(false);
   const [isFocusModalOpen, setIsFocusModalOpen] = useState<boolean>(false);
+
+  // QWERTY Computer Keyboard Live Play & Reverse Chord Detector
+  const {
+    activeMidis: qwertyMidis,
+    detectedChord,
+  } = useQwertyPiano({ enabled: true });
 
   // Hover Preview & Live Audition State
   const {
@@ -63,6 +110,20 @@ export const App: React.FC = () => {
     toggleHoverScrub,
   } = useHoverPreview();
 
+  // Read URL query parameters on initial mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const parsed = parseStudioStateFromUrl(new URLSearchParams(window.location.search));
+      if (parsed.key) setKeyRoot(parsed.key);
+      if (parsed.input) setRawInput(parsed.input);
+      if (parsed.vibe) setVibe(parsed.vibe);
+      if (parsed.spice) setSpiceLevel(parsed.spice);
+      if (parsed.bpm) setBpm(parsed.bpm);
+      if (parsed.groove) setGroove(parsed.groove);
+      if (parsed.voicing) setVoicingTopology(parsed.voicing);
+    }
+  }, []);
+
   // Computed Progression State
   const [customState, setCustomState] = useState<ReturnType<typeof buildProgressionState> | null>(null);
 
@@ -72,12 +133,13 @@ export const App: React.FC = () => {
       customState.rawInput === rawInput &&
       customState.vibe === vibe &&
       customState.spiceLevel === spiceLevel &&
-      customState.keyRoot === keyRoot
+      customState.keyRoot === keyRoot &&
+      customState.voicingTopology === voicingTopology
     ) {
       return customState;
     }
-    return buildProgressionState(rawInput, vibe, spiceLevel, keyRoot);
-  }, [rawInput, vibe, spiceLevel, keyRoot, customState]);
+    return buildProgressionState(rawInput, vibe, spiceLevel, keyRoot, voicingTopology);
+  }, [rawInput, vibe, spiceLevel, keyRoot, voicingTopology, customState]);
 
   useEffect(() => {
     if (progressionState.keyRoot && progressionState.keyRoot !== keyRoot) {
@@ -93,14 +155,17 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     initWebMidi(
-      (note) => {
-        console.log('MIDI Note On:', note);
+      (noteMidi) => {
+        pianoAudioEngine.playNote(Note.fromMidi(noteMidi), '4n');
       },
-      (note) => {
-        console.log('MIDI Note Off:', note);
-      }
+      () => {}
     );
   }, []);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
 
   const handleInputChange = (val: string) => {
     setCustomState(null);
@@ -127,6 +192,11 @@ export const App: React.FC = () => {
   const handleSpiceChange = (newSpice: SpiceLevel) => {
     setCustomState(null);
     setSpiceLevel(newSpice);
+  };
+
+  const handleVoicingTopologyChange = (newTopology: VoicingTopology) => {
+    setCustomState(null);
+    setVoicingTopology(newTopology);
   };
 
   const handleSelectPreset = (preset: PresetProgression) => {
@@ -219,7 +289,32 @@ export const App: React.FC = () => {
     setCustomState(updated);
   };
 
-  // Keyboard Shortcuts (Space: Play/Stop, ArrowLeft/Right: Step chords)
+  const handleExportMidi = () => {
+    const filename = `pianolodo-${keyRoot}-${rawInput.replace(/[^a-zA-Z0-9]/g, '_')}.mid`;
+    downloadMidiFile(progressionState.reharmonizedChords, bpm, filename);
+    showToast(t('exportedMidiToast', lang));
+  };
+
+  const handleShareUrl = () => {
+    const url = serializeStudioStateToUrl({
+      key: keyRoot,
+      input: rawInput,
+      vibe,
+      spice: spiceLevel,
+      bpm,
+      groove,
+      voicing: voicingTopology,
+    });
+    navigator.clipboard.writeText(url);
+    showToast(t('sharedUrlToast', lang));
+  };
+
+  const handleAppendDetectedChord = (chordSymbol: string) => {
+    const nextInput = rawInput.trim() ? `${rawInput.trim()} - ${chordSymbol}` : chordSymbol;
+    handleInputChange(nextInput);
+  };
+
+  // Keyboard Shortcuts (Space: Play/Stop, ArrowLeft/Right: Step chords, H: Scrub)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (
@@ -279,7 +374,7 @@ export const App: React.FC = () => {
   const vibeName = lang === 'vi' ? currentVibeProfile.nameVi : currentVibeProfile.nameEn;
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#1C1917] flex font-sans selection:bg-[#FDE68A] selection:text-[#78350F]">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-[#0C0A09] text-[#1C1917] dark:text-[#F5F5F4] flex font-sans selection:bg-[#FDE68A] selection:text-[#78350F] transition-colors">
       {/* 1. Left Clarion Docked Sidebar */}
       <ClarionSidebar
         currentTab={activeTab}
@@ -314,7 +409,21 @@ export const App: React.FC = () => {
           isLooping={isLooping}
           onToggleLoop={() => setIsLooping((prev) => !prev)}
           lang={lang}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          theoryDepth={theoryDepth}
+          onToggleTheoryDepth={handleToggleTheoryDepth}
+          onExportMidi={handleExportMidi}
+          onShareUrl={handleShareUrl}
         />
+
+        {/* Global Toast Notification */}
+        {toastMessage && (
+          <div className="fixed top-20 right-6 z-50 bg-[#1C1917] dark:bg-[#F5F5F4] text-white dark:text-[#1C1917] px-4 py-2.5 rounded-xl shadow-lg border border-[#E5DFD7] dark:border-[#292524] text-xs font-bold flex items-center gap-2 animate-bounce">
+            <Check className="w-4 h-4 text-emerald-500" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
 
         {/* Tab Content Router */}
         <main className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto w-full">
@@ -322,48 +431,48 @@ export const App: React.FC = () => {
           {activeTab === 'studio' && (
             <div className="space-y-5">
               {/* Compact Editorial Studio Header Strip */}
-              <div className="p-3.5 md:p-4 rounded-2xl bg-[#FFFFFF] border border-[#E5DFD7] shadow-xs flex flex-wrap items-center justify-between gap-3">
+              <div className="p-3.5 md:p-4 rounded-2xl bg-[#FFFFFF] dark:bg-[#1C1917] border border-[#E5DFD7] dark:border-[#292524] shadow-xs flex flex-wrap items-center justify-between gap-3 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] border border-[#FDE68A] flex items-center justify-center text-[#D97706] font-bold text-sm shadow-xs font-serif">
+                  <span className="w-9 h-9 rounded-xl bg-[#FEF3C7] dark:bg-[#78350F]/40 border border-[#FDE68A] dark:border-[#D97706]/40 flex items-center justify-center text-[#D97706] dark:text-[#F59E0B] font-bold text-sm shadow-xs font-serif">
                     88
                   </span>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-base md:text-lg font-bold text-[#1C1917] tracking-tight font-serif">
-                        Pianolodo Studio
+                      <h2 className="text-base md:text-lg font-bold text-[#1C1917] dark:text-[#F5F5F4] tracking-tight font-serif">
+                        Pianolodo Studio 3.0
                       </h2>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#D97706] border border-[#E5DFD7]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#12100E] text-[#D97706] dark:text-[#F59E0B] border border-[#E5DFD7] dark:border-[#292524]">
                         Tone {keyRoot}
                       </span>
-                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] text-[#10B981] border border-[#E5DFD7]">
+                      <span className="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-[#FAF8F5] dark:bg-[#12100E] text-[#10B981] border border-[#E5DFD7] dark:border-[#292524]">
                         {avgSmoothness}% {lang === 'vi' ? 'Độ mượt' : 'Smoothness'}
                       </span>
                     </div>
-                    <p className="text-xs md:text-sm text-[#78716C] hidden sm:block">
+                    <p className="text-xs md:text-sm text-[#78716C] dark:text-[#A8A29E] hidden sm:block">
                       {vibeName} • {progressionState.reharmonizedChords.length} {lang === 'vi' ? 'hợp âm' : 'chords'} • Deterministic Voice-Leading
                     </p>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#78716C] bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD7]">
-                    <Command className="w-3.5 h-3.5 text-[#D97706]" />
+                  <div className="hidden lg:flex items-center gap-1.5 text-xs text-[#78716C] dark:text-[#A8A29E] bg-[#FAF8F5] dark:bg-[#12100E] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#292524]">
+                    <Command className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
                     <span>
-                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">Space</kbd> Play ·{' '}
-                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">←</kbd>
-                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">→</kbd> Step ·{' '}
-                      <kbd className="font-mono bg-white px-1.5 py-0.5 rounded border border-[#E5DFD7] text-xs">H</kbd> Scrub
+                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">Space</kbd> Play ·{' '}
+                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">←</kbd>
+                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">→</kbd> Step ·{' '}
+                      <kbd className="font-mono bg-white dark:bg-[#292524] px-1.5 py-0.5 rounded border border-[#E5DFD7] dark:border-[#38332E] text-xs">QWERTY</kbd> Play
                     </span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] px-3 py-1.5 rounded-xl border border-[#E5DFD7] text-xs font-mono text-[#065F46] font-semibold">
+                  <div className="flex items-center gap-1.5 bg-[#FAF8F5] dark:bg-[#12100E] px-3 py-1.5 rounded-xl border border-[#E5DFD7] dark:border-[#292524] text-xs font-mono text-[#065F46] dark:text-[#34D399] font-semibold">
                     <ShieldCheck className="w-4 h-4 text-[#10B981]" />
                     <span>On-Device</span>
                   </div>
                 </div>
               </div>
 
-              {/* Progression Control & Unified Harmonic Assistant Workbench */}
+              {/* Progression Control & Harmonic Workbench */}
               <ProgressionControlBar
                 rawInput={rawInput}
                 onInputChange={handleInputChange}
@@ -374,6 +483,8 @@ export const App: React.FC = () => {
                 onVibeChange={handleVibeChange}
                 spiceLevel={spiceLevel}
                 onSpiceChange={handleSpiceChange}
+                voicingTopology={voicingTopology}
+                onVoicingTopologyChange={handleVoicingTopologyChange}
                 instrumentTone={instrumentTone}
                 onInstrumentChange={handleInstrumentChange}
                 onSelectPreset={handleSelectPreset}
@@ -388,6 +499,8 @@ export const App: React.FC = () => {
                 onAuditionChord={setAuditionPreview}
                 hoverScrubEnabled={hoverScrubEnabled}
                 onToggleHoverScrub={toggleHoverScrub}
+                detectedChord={detectedChord}
+                onAppendDetectedChord={handleAppendDetectedChord}
               />
 
               {/* Interactive Chord Timeline with Live Hover Preview */}
@@ -414,11 +527,12 @@ export const App: React.FC = () => {
                 onLeaveHover={endHover}
               />
 
-              {/* 88-Key Split-Hand Piano Keyboard with Ghost Voicing & Voice-Leading Arcs */}
+              {/* 88-Key Split-Hand Piano Keyboard with Ghost Voicing, 3D tactile keys & Live QWERTY highlights */}
               <Piano88Keyboard
                 activeChord={activeChord}
                 previewChord={previewState?.chord}
                 previewSource={previewState?.source}
+                liveMidis={qwertyMidis}
                 lang={lang}
               />
 
@@ -436,45 +550,64 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* TAB 2: CURRICULUM */}
+          {/* TAB 2: PRACTICE GYM & EAR TRAINING */}
+          {activeTab === 'practice' && (
+            <Suspense fallback={<div className="p-12 text-center text-sm text-[#78716C] dark:text-[#A8A29E]">Loading Practice Gym...</div>}>
+              <PracticeGymView
+                chords={progressionState.reharmonizedChords}
+                keyRoot={keyRoot}
+                lang={lang}
+              />
+            </Suspense>
+          )}
+
+          {/* TAB 3: CURRICULUM */}
           {activeTab === 'curriculum' && (
-            <CurriculumView
-              lang={lang}
-              onSelectFormula={(formula) => {
-                handleInputChange(formula);
-                setActiveTab('studio');
-              }}
-            />
+            <Suspense fallback={<div className="p-12 text-center text-sm text-[#78716C] dark:text-[#A8A29E]">Loading Curriculum...</div>}>
+              <CurriculumView
+                lang={lang}
+                onSelectFormula={(formula) => {
+                  handleInputChange(formula);
+                  setActiveTab('studio');
+                }}
+              />
+            </Suspense>
           )}
 
-          {/* TAB 3: FOCUS MUSIC */}
+          {/* TAB 4: FOCUS MUSIC */}
           {activeTab === 'focus' && (
-            <FocusMusicView
-              keyRoot={keyRoot}
-              progressionChordsStr={progressionChordsStr}
-              lang={lang}
-            />
+            <Suspense fallback={<div className="p-12 text-center text-sm text-[#78716C] dark:text-[#A8A29E]">Loading Focus Music...</div>}>
+              <FocusMusicView
+                keyRoot={keyRoot}
+                progressionChordsStr={progressionChordsStr}
+                lang={lang}
+              />
+            </Suspense>
           )}
 
-          {/* TAB 4: PRESETS */}
+          {/* TAB 5: PRESETS */}
           {activeTab === 'presets' && (
-            <PresetsView
-              lang={lang}
-              onSelectPreset={(preset) => {
-                handleSelectPreset(preset);
-                setActiveTab('studio');
-              }}
-              activeRawInput={rawInput}
-            />
+            <Suspense fallback={<div className="p-12 text-center text-sm text-[#78716C] dark:text-[#A8A29E]">Loading Presets...</div>}>
+              <PresetsView
+                lang={lang}
+                onSelectPreset={(preset) => {
+                  handleSelectPreset(preset);
+                  setActiveTab('studio');
+                }}
+                activeRawInput={rawInput}
+              />
+            </Suspense>
           )}
 
-          {/* TAB 5: MIDI & SOUND */}
+          {/* TAB 6: MIDI & SOUND */}
           {activeTab === 'midi' && (
-            <MidiSettingsView
-              instrumentTone={instrumentTone}
-              onInstrumentChange={handleInstrumentChange}
-              lang={lang}
-            />
+            <Suspense fallback={<div className="p-12 text-center text-sm text-[#78716C] dark:text-[#A8A29E]">Loading MIDI Settings...</div>}>
+              <MidiSettingsView
+                instrumentTone={instrumentTone}
+                onInstrumentChange={handleInstrumentChange}
+                lang={lang}
+              />
+            </Suspense>
           )}
         </main>
 
@@ -488,12 +621,12 @@ export const App: React.FC = () => {
         />
 
         {/* Executive Footer */}
-        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#E5DFD7] bg-[#F7F4EE] text-xs text-[#78716C] flex flex-wrap items-center justify-between gap-4">
+        <footer className="mt-auto py-5 px-6 md:px-8 border-t border-[#E5DFD7] dark:border-[#292524] bg-[#F7F4EE] dark:bg-[#0C0A09] text-xs text-[#78716C] dark:text-[#A8A29E] flex flex-wrap items-center justify-between gap-4 transition-colors">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-[#10B981] pulse-dot" />
             <span>{t('footerLeft', lang)}</span>
           </div>
-          <div className="text-[11px] text-[#A8A29E] font-mono">
+          <div className="text-[11px] text-[#A8A29E] dark:text-[#78716C] font-mono">
             {t('footerRight', lang)}
           </div>
         </footer>
