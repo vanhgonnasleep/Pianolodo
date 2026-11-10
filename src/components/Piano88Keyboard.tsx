@@ -230,7 +230,7 @@ export const Piano88Keyboard: React.FC<Piano88KeyboardProps> = ({
   };
 
   return (
-    <div className="bg-[#FFFFFF] dark:bg-[#121217] p-4 md:p-6 border border-[#E5DFD7] dark:border-[#272736] rounded-2xl shadow-sm space-y-3 transition-colors">
+    <div className="aurora-card bg-[#FFFFFF]/90 dark:bg-[#1C203B]/80 backdrop-blur-xl p-4 md:p-6 border border-[#E5DFD7] dark:border-white/12 rounded-3xl shadow-sm space-y-3 transition-colors">
       {/* Legend & Active Voicing Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center gap-4">

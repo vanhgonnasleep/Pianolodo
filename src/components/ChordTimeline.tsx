@@ -73,7 +73,7 @@ export const ChordTimeline: React.FC<ChordTimelineProps> = ({
       : [];
 
   return (
-    <div className="bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] rounded-2xl p-4 md:p-6 shadow-sm space-y-4 overflow-visible transition-colors">
+    <div className="aurora-card bg-[#FFFFFF]/90 dark:bg-[#1C203B]/80 backdrop-blur-xl border border-[#E5DFD7] dark:border-white/12 rounded-3xl p-4 md:p-6 shadow-sm space-y-4 overflow-visible transition-colors">
       {/* Top playback row */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#F5F1EB] dark:border-[#22222E] pb-3">
         {/* Playback A/B Buttons */}

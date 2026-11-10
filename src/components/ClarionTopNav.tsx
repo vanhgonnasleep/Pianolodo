@@ -37,7 +37,7 @@ interface ClarionTopNavProps {
   lang: Language;
   onToggleMobileMenu?: () => void;
 
-  // New Studio Cockpit Props
+  // Studio Cockpit Props
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
   theoryDepth?: 'beginner' | 'pro';
@@ -64,7 +64,7 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
   onToggleLoop,
   lang,
   onToggleMobileMenu,
-  theme = 'light',
+  theme = 'dark',
   onToggleTheme,
   theoryDepth = 'pro',
   onToggleTheoryDepth,
@@ -72,38 +72,38 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
   onShareUrl,
 }) => {
   return (
-    <nav className="h-16 bg-[#FFFFFF]/95 dark:bg-[#121217]/95 border-b border-[#E5DFD7] dark:border-[#272736] px-4 md:px-6 flex items-center justify-between gap-3 sticky top-0 z-20 backdrop-blur-md shadow-xs transition-colors">
+    <nav className="h-16 bg-[#FFFFFF]/90 dark:bg-[#16192E]/90 border-b border-[#E5DFD7] dark:border-white/10 px-3 md:px-5 flex items-center justify-between gap-2 md:gap-3 sticky top-0 z-20 backdrop-blur-xl shadow-xs transition-colors overflow-x-hidden">
       {/* Left: Mobile hamburger + Context pill + Audio Visualizer */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 md:gap-3 shrink-0">
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
-            className="md:hidden p-2 rounded-xl bg-[#F5F1EB] dark:bg-[#181824] text-[#78716C] dark:text-[#A8A29E] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]"
+            className="md:hidden p-2 rounded-xl bg-[#F5F1EB] dark:bg-[#1C203B] text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC]"
           >
             <Menu className="w-5 h-5" />
           </button>
         )}
 
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-lg bg-[#FAF8F5] dark:bg-[#161622] text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#272736] font-mono font-bold text-sm flex items-center gap-1.5 shadow-xs">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] dark:bg-[#F59E0B] shadow-[0_0_8px_#F59E0B]" />
-            Tone {keyRoot} Major
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="whitespace-nowrap shrink-0 min-w-[130px] px-3 py-1 rounded-xl bg-[#FAF8F5] dark:bg-[#15192C] text-[#1C1917] dark:text-[#F8FAFC] border border-[#E5DFD7] dark:border-white/10 font-mono font-bold text-xs md:text-sm flex items-center gap-1.5 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#D97706] dark:bg-[#F59E0B] shadow-[0_0_8px_#F59E0B] shrink-0" />
+            <span className="truncate">Tone {keyRoot} Major</span>
           </span>
 
           {/* Transpose -1 / +1 */}
-          <div className="flex items-center bg-[#FAF8F5] dark:bg-[#0C0C10] rounded-lg border border-[#E5DFD7] dark:border-[#272736] p-0.5">
+          <div className="flex items-center bg-[#FAF8F5] dark:bg-[#15192C] rounded-xl border border-[#E5DFD7] dark:border-white/10 p-0.5 shrink-0">
             <button
               onClick={() => onTranspose(-1)}
               title="Dịch giọng xuống 1/2 cung (-1 semitone)"
-              className="px-2 py-0.5 rounded text-sm font-mono font-bold text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6] hover:bg-[#EDE8E1] dark:hover:bg-[#1E1E2C] transition"
+              className="px-2 py-0.5 rounded-lg text-xs md:text-sm font-mono font-bold text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC] hover:bg-[#EDE8E1] dark:hover:bg-[#232946] transition"
             >
               -1
             </button>
-            <span className="w-px h-3.5 bg-[#E5DFD7] dark:border-[#272736]" />
+            <span className="w-px h-3.5 bg-[#E5DFD7] dark:bg-white/10" />
             <button
               onClick={() => onTranspose(1)}
               title="Dịch giọng lên 1/2 cung (+1 semitone)"
-              className="px-2 py-0.5 rounded text-sm font-mono font-bold text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6] hover:bg-[#EDE8E1] dark:hover:bg-[#1E1E2C] transition"
+              className="px-2 py-0.5 rounded-lg text-xs md:text-sm font-mono font-bold text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC] hover:bg-[#EDE8E1] dark:hover:bg-[#232946] transition"
             >
               +1
             </button>
@@ -111,11 +111,13 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
         </div>
 
         {/* Real-Time Waveform Visualizer */}
-        <AudioWaveVisualizer isPlaying={isPlaying} theme={theme} />
+        <div className="hidden lg:block shrink-0">
+          <AudioWaveVisualizer isPlaying={isPlaying} theme={theme} />
+        </div>
       </div>
 
-      {/* Center / Right: Studio Tools & Playback Engine */}
-      <div className="flex items-center gap-2 md:gap-3">
+      {/* Middle: Compact Studio Utility Buttons */}
+      <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
         {/* Theory Depth Toggle (Beginner / Pro) */}
         {onToggleTheoryDepth && (
           <button
@@ -125,14 +127,14 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
                 ? lang === 'vi' ? 'Đang ở Chế độ Người mới (Bấm để sang Pro)' : 'Beginner Mode (Click for Pro)'
                 : lang === 'vi' ? 'Đang ở Chế độ Pro Studio' : 'Pro Studio Mode'
             }
-            className={`hidden lg:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition ${
+            className={`hidden xl:flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold shrink-0 transition ${
               theoryDepth === 'beginner'
                 ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#92400E] dark:text-[#FBBF24] border-[#FDE68A] dark:border-[#F59E0B]/40'
-                : 'bg-[#FAF8F5] dark:bg-[#161622] text-[#78716C] dark:text-[#9494A6] border-[#E5DFD7] dark:border-[#272736] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
+                : 'bg-[#FAF8F5] dark:bg-[#1C203B] text-[#78716C] dark:text-[#CBD5E1] border-[#E5DFD7] dark:border-white/10 hover:text-[#1C1917] dark:hover:text-[#F8FAFC]'
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
-            <span>{theoryDepth === 'beginner' ? (lang === 'vi' ? 'Beginner' : 'Beginner') : 'Pro'}</span>
+            <span>{theoryDepth === 'beginner' ? 'Beginner' : 'Pro'}</span>
           </button>
         )}
 
@@ -141,7 +143,7 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
           <button
             onClick={onExportMidi}
             title={lang === 'vi' ? 'Xuất file MIDI (.mid) cho DAW (Ableton / FL Studio / Logic)' : 'Export Standard MIDI (.mid) file'}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#161622] text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#272736] hover:bg-[#EDE8E1] dark:hover:bg-[#202030] text-xs font-semibold transition"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#1C203B] text-[#1C1917] dark:text-[#F8FAFC] border border-[#E5DFD7] dark:border-white/10 hover:bg-[#EDE8E1] dark:hover:bg-[#232946] text-xs font-semibold shrink-0 transition"
           >
             <Download className="w-3.5 h-3.5 text-[#D97706] dark:text-[#F59E0B]" />
             <span>.MID</span>
@@ -153,136 +155,133 @@ export const ClarionTopNav: React.FC<ClarionTopNavProps> = ({
           <button
             onClick={onShareUrl}
             title={lang === 'vi' ? 'Sao chép link chia sẻ vòng hòa thanh' : 'Copy shareable progression link'}
-            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#161622] text-[#1C1917] dark:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#272736] hover:bg-[#EDE8E1] dark:hover:bg-[#202030] text-xs font-semibold transition"
+            className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#FAF8F5] dark:bg-[#1C203B] text-[#1C1917] dark:text-[#F8FAFC] border border-[#E5DFD7] dark:border-white/10 hover:bg-[#EDE8E1] dark:hover:bg-[#232946] text-xs font-semibold shrink-0 transition"
           >
             <Share2 className="w-3.5 h-3.5 text-[#2563EB] dark:text-[#38BDF8]" />
-            <span>{lang === 'vi' ? 'Share' : 'Share'}</span>
+            <span>Share</span>
           </button>
         )}
 
-        {/* Theme Toggle (Warm Ivory ↔ Midnight Synth Studio) */}
+        {/* Theme Toggle */}
         {onToggleTheme && (
           <button
             onClick={onToggleTheme}
-            title={
-              theme === 'dark'
-                ? lang === 'vi' ? 'Đổi sang Giao diện Giấy Ngà Sáng (Warm Studio)' : 'Switch to Warm Studio'
-                : lang === 'vi' ? 'Đổi sang Chế độ Midnight Synth Studio' : 'Switch to Midnight Synth Studio'
-            }
-            className="p-2 rounded-xl bg-[#FAF8F5] dark:bg-[#161622] text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6] border border-[#E5DFD7] dark:border-[#272736] transition"
+            title={theme === 'dark' ? 'Đổi sang giao diện sáng' : 'Đổi sang giao diện Twilight Aurora'}
+            className="p-2 rounded-xl bg-[#FAF8F5] dark:bg-[#1C203B] text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC] border border-[#E5DFD7] dark:border-white/10 shrink-0 transition"
           >
             {theme === 'dark' ? (
-              <Sun className="w-4 h-4 text-[#F59E0B]" />
+              <Sun className="w-3.5 h-3.5 text-[#F59E0B]" />
             ) : (
-              <Moon className="w-4 h-4 text-[#78716C]" />
+              <Moon className="w-3.5 h-3.5 text-[#78716C]" />
             )}
           </button>
         )}
 
         {/* Instrument Switcher */}
-        <div className="hidden xl:flex items-center bg-[#FAF8F5] dark:bg-[#0C0C10] p-1 rounded-xl border border-[#E5DFD7] dark:border-[#272736] text-xs">
+        <div className="hidden 2xl:flex items-center bg-[#FAF8F5] dark:bg-[#15192C] p-0.5 rounded-xl border border-[#E5DFD7] dark:border-white/10 text-xs shrink-0">
           <button
             onClick={() => onInstrumentChange('grand-piano')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
+            className={`px-2 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
               instrumentTone === 'grand-piano'
-                ? 'bg-[#D97706] dark:bg-[#F59E0B] text-white dark:text-black font-extrabold shadow-xs dark:shadow-[0_0_12px_rgba(245,158,11,0.35)]'
-                : 'text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
+                ? 'bg-[#D97706] dark:bg-[#F59E0B] text-white dark:text-black font-extrabold shadow-xs'
+                : 'text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC]'
             }`}
           >
-            <Volume2 className="w-3.5 h-3.5" />
-            {t('grandPiano', lang)}
+            <Volume2 className="w-3 h-3" />
+            <span className="text-[11px]">{t('grandPiano', lang)}</span>
           </button>
           <button
             onClick={() => onInstrumentChange('warm-rhodes')}
-            className={`px-2.5 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
+            className={`px-2 py-1 rounded-lg font-medium transition flex items-center gap-1 ${
               instrumentTone === 'warm-rhodes'
-                ? 'bg-[#D97706] dark:bg-[#F59E0B] text-white dark:text-black font-extrabold shadow-xs dark:shadow-[0_0_12px_rgba(245,158,11,0.35)]'
-                : 'text-[#78716C] dark:text-[#9494A6] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
+                ? 'bg-[#D97706] dark:bg-[#F59E0B] text-white dark:text-black font-extrabold shadow-xs'
+                : 'text-[#78716C] dark:text-[#CBD5E1] hover:text-[#1C1917] dark:hover:text-[#F8FAFC]'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            {t('warmRhodes', lang)}
+            <Sparkles className="w-3 h-3" />
+            <span className="text-[11px]">{t('warmRhodes', lang)}</span>
           </button>
         </div>
 
-        {/* Groove pattern dropdown */}
-        <div className="hidden md:flex items-center gap-1.5 bg-[#FAF8F5] dark:bg-[#0C0C10] px-2.5 py-1 rounded-xl border border-[#E5DFD7] dark:border-[#272736]">
-          <Sliders className="w-3.5 h-3.5 text-[#78716C] dark:text-[#9494A6]" />
+        {/* Groove Pattern Dropdown */}
+        <div className="hidden md:flex items-center gap-1 bg-[#FAF8F5] dark:bg-[#15192C] px-2 py-1 rounded-xl border border-[#E5DFD7] dark:border-white/10 shrink-0">
+          <Sliders className="w-3 h-3 text-[#78716C] dark:text-[#CBD5E1]" />
           <select
             value={groove}
             onChange={(e) => onGrooveChange(e.target.value as GroovePatternId)}
-            className="bg-transparent text-xs text-[#1C1917] dark:text-[#F4F4F6] font-semibold focus:outline-none cursor-pointer"
+            className="bg-transparent text-xs text-[#1C1917] dark:text-[#F8FAFC] font-semibold focus:outline-none cursor-pointer"
           >
-            <option value="block" className="dark:bg-[#121217]">{t('grooveBlock', lang)}</option>
-            <option value="ballad-arpeggio" className="dark:bg-[#121217]">{t('grooveBallad', lang)}</option>
-            <option value="rnb-pulse" className="dark:bg-[#121217]">{t('grooveRnb', lang)}</option>
-            <option value="bossa-nova" className="dark:bg-[#121217]">{t('grooveBossa', lang)}</option>
-            <option value="dilla-swing" className="dark:bg-[#121217]">Neo-Soul Dilla Swing</option>
-            <option value="gospel-walk" className="dark:bg-[#121217]">Gospel Passing Walk</option>
-            <option value="cinematic-wave" className="dark:bg-[#121217]">Cinematic Wave</option>
+            <option value="block" className="dark:bg-[#16192E]">{t('grooveBlock', lang)}</option>
+            <option value="ballad-arpeggio" className="dark:bg-[#16192E]">{t('grooveBallad', lang)}</option>
+            <option value="rnb-pulse" className="dark:bg-[#16192E]">{t('grooveRnb', lang)}</option>
+            <option value="bossa-nova" className="dark:bg-[#16192E]">{t('grooveBossa', lang)}</option>
+            <option value="dilla-swing" className="dark:bg-[#16192E]">Neo-Soul Dilla</option>
+            <option value="gospel-walk" className="dark:bg-[#16192E]">Gospel Walk</option>
+            <option value="cinematic-wave" className="dark:bg-[#16192E]">Cinematic Wave</option>
           </select>
-          <span className="text-[11px] font-mono text-[#D97706] dark:text-[#F59E0B] font-bold ml-1">{bpm}</span>
+          <span className="text-[10px] font-mono text-[#D97706] dark:text-[#F59E0B] font-bold ml-1">{bpm}</span>
           <input
             type="range"
             min="50"
             max="140"
             value={bpm}
             onChange={(e) => onBpmChange(Number(e.target.value))}
-            className="w-14 accent-[#D97706] dark:accent-[#F59E0B]"
+            className="w-12 accent-[#D97706] dark:accent-[#F59E0B]"
           />
         </div>
+      </div>
 
+      {/* Right: Loop Mode + Playback Primary CTA (ALWAYS pinned and visible!) */}
+      <div className="flex items-center gap-1.5 md:gap-2 shrink-0 ml-auto">
         {/* Loop Mode Toggle Button */}
         <button
           onClick={onToggleLoop}
           title={lang === 'vi' ? 'Bật/tắt lặp lại liên tục để luyện tập' : 'Toggle infinite loop for practice'}
-          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition ${
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-xs font-semibold shrink-0 transition ${
             isLooping
               ? 'bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] border-[#FDE68A] dark:border-[#F59E0B]/40 shadow-xs glow-amber'
-              : 'bg-[#FAF8F5] dark:bg-[#161622] text-[#78716C] dark:text-[#9494A6] border-[#E5DFD7] dark:border-[#272736] hover:text-[#1C1917] dark:hover:text-[#F4F4F6]'
+              : 'bg-[#FAF8F5] dark:bg-[#1C203B] text-[#78716C] dark:text-[#CBD5E1] border-[#E5DFD7] dark:border-white/10 hover:text-[#1C1917] dark:hover:text-[#F8FAFC]'
           }`}
         >
           <Repeat className="w-3.5 h-3.5" />
-          <span className="hidden lg:inline">{lang === 'vi' ? 'Loop' : 'Loop'}</span>
+          <span className="hidden xl:inline">Loop</span>
         </button>
 
         {/* Playback Buttons */}
-        <div className="flex items-center gap-1.5">
-          {isPlaying ? (
+        {isPlaying ? (
+          <button
+            onClick={onStop}
+            className="pressable flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/30 glow-rose transition shrink-0"
+          >
+            <Square className="w-3.5 h-3.5 fill-current" />
+            <span className="whitespace-nowrap">{t('stopPlayback', lang)}</span>
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={onStop}
-              className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md shadow-rose-600/20 glow-rose transition"
+              onClick={onPlayOriginal}
+              className="pressable hidden 2xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#F5F1EB] dark:bg-[#1C203B] hover:bg-[#EDE8E1] dark:hover:bg-[#232946] text-[#44403C] dark:text-[#CBD5E1] border border-[#E5DFD7] dark:border-white/10 text-xs font-semibold transition shrink-0"
             >
-              <Square className="w-3.5 h-3.5 fill-current" />
-              <span>{t('stopPlayback', lang)}</span>
+              <Play className="w-3.5 h-3.5" />
+              <span className="whitespace-nowrap">{t('playOriginal', lang)}</span>
             </button>
-          ) : (
-            <>
-              <button
-                onClick={onPlayOriginal}
-                className="pressable hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-[#F5F1EB] dark:bg-[#181824] hover:bg-[#EDE8E1] dark:hover:bg-[#202030] text-[#44403C] dark:text-[#E4E4E7] border border-[#E5DFD7] dark:border-[#2E2E42] text-xs font-semibold transition"
-              >
-                <Play className="w-3.5 h-3.5" />
-                <span>{t('playOriginal', lang)}</span>
-              </button>
-              <button
-                onClick={onPlayReharmonized}
-                className="pressable flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#D97706] to-[#B45309] dark:from-[#F59E0B] dark:to-[#D97706] hover:from-[#F59E0B] hover:to-[#D97706] text-white dark:text-black font-extrabold text-xs shadow-md shadow-[#D97706]/20 dark:shadow-[0_0_18px_rgba(245,158,11,0.4)] transition"
-              >
-                <Sparkles className="w-3.5 h-3.5 fill-current" />
-                <span>{t('playReharmonized', lang)}</span>
-              </button>
-            </>
-          )}
+            <button
+              onClick={onPlayReharmonized}
+              className="pressable flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#F59E0B] via-[#D97706] to-[#B45309] hover:from-[#FBBF24] hover:to-[#D97706] text-black font-extrabold text-xs shadow-md shadow-[#F59E0B]/30 dark:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5 fill-current" />
+              <span className="whitespace-nowrap">{t('playReharmonized', lang)}</span>
+            </button>
+          </div>
+        )}
 
-          {isPlaying && (
-            <span className="hidden 2xl:inline-block text-[11px] font-semibold px-2.5 py-1 rounded-full bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] border border-[#FDE68A] dark:border-[#F59E0B]/40 animate-pulse glow-amber">
-              {playingMode === 'original'
-                ? t('playingOriginalBadge', lang)
-                : t('playingReharmonizedBadge', lang)}
-            </span>
-          )}
-        </div>
+        {isPlaying && (
+          <span className="hidden 2xl:inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#B45309] dark:text-[#FBBF24] border border-[#FDE68A] dark:border-[#F59E0B]/40 animate-pulse glow-amber shrink-0">
+            {playingMode === 'original'
+              ? t('playingOriginalBadge', lang)
+              : t('playingReharmonizedBadge', lang)}
+          </span>
+        )}
       </div>
     </nav>
   );

@@ -87,6 +87,12 @@ export const I18N_DICTIONARY = {
     reverseChordDetected: 'Hợp âm nhận diện thời gian thực:',
     appendChordBtn: '+ Thêm vào vòng hợp âm',
     qwertyHint: 'Chơi phím máy tính: A-S-D-F-G-H-J-K-L-; (Trắng), W-E-T-Y-U-O-P (Đen), Z/X (Quãng 8), Shift (Pedal)',
+    songAnalyzerBtn: 'Tách Hợp Âm Từ Nhạc/Mic',
+    songAnalyzerTitle: 'Trợ Lý Tách Hợp Âm Từ Nhạc / Mic',
+    songAnalyzerDesc: 'Phân tích vòng hòa thanh tự động từ file nhạc, giọng hát Micro hoặc giai điệu mẫu',
+    instantDemoBtn: 'Thử Ngay Bản Demo',
+    auditionBtn: 'Nghe Thử',
+    loadStudioBtn: 'Đẩy Lên Studio',
   },
   en: {
     appTitle: 'Pianolodo • Piano Harmony Coach & Color Voicings',
@@ -174,6 +180,12 @@ export const I18N_DICTIONARY = {
     reverseChordDetected: 'Real-Time Detected Chord:',
     appendChordBtn: '+ Append to Progression',
     qwertyHint: 'QWERTY Play: A-S-D-F-G-H-J-K-L-; (White), W-E-T-Y-U-O-P (Black), Z/X (Octaves), Shift (Sustain)',
+    songAnalyzerBtn: 'Song -> Chords Analyzer',
+    songAnalyzerTitle: 'Audio & Melody-to-Chord Analyzer',
+    songAnalyzerDesc: 'Automated harmonic extraction & 3 reharmonized accompaniment styles',
+    instantDemoBtn: 'Instant Demo',
+    auditionBtn: 'Audition',
+    loadStudioBtn: 'Load to Studio',
   },
 };
 

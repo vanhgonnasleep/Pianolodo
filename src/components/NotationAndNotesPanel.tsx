@@ -147,7 +147,7 @@ export const NotationAndNotesPanel: React.FC<NotationAndNotesPanelProps> = ({
   const { leftHand, rightHand, voiceLeading } = activeChord;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] rounded-2xl p-4 md:p-6 shadow-sm transition-colors">
+    <div className="aurora-card grid grid-cols-1 md:grid-cols-12 gap-4 bg-[#FFFFFF]/90 dark:bg-[#1C203B]/80 backdrop-blur-xl border border-[#E5DFD7] dark:border-white/12 rounded-3xl p-4 md:p-6 shadow-sm transition-colors">
       {/* Column 1: Literal Note Names & Hands Readout */}
       <div className="md:col-span-7 space-y-4">
         <div className="flex items-center justify-between">

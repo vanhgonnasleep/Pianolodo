@@ -19,6 +19,13 @@ export const AudioWaveVisualizer: React.FC<AudioWaveVisualizerProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const cssWidth = 72;
+    const cssHeight = 22;
+    const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+
     let phase = 0;
 
     const renderWave = () => {
@@ -29,23 +36,33 @@ export const AudioWaveVisualizer: React.FC<AudioWaveVisualizerProps> = ({
       const waveform = pianoAudioEngine.getWaveformData();
       const hasAudio = isPlaying || Array.from(waveform).some((v) => Math.abs(v) > 0.01);
 
-      ctx.lineWidth = 1.75;
+      ctx.lineWidth = 1.75 * dpr;
+
       if (theme === 'dark') {
-        if (typeof ctx.createLinearGradient === 'function') {
-          const grad = ctx.createLinearGradient(0, 0, width, 0);
-          grad.addColorStop(0, '#06B6D4');
-          grad.addColorStop(0.5, '#F59E0B');
-          grad.addColorStop(1, '#3B82F6');
-          ctx.strokeStyle = grad;
-        } else {
+        let appliedGrad = false;
+        try {
+          if (typeof ctx.createLinearGradient === 'function') {
+            const grad = ctx.createLinearGradient(0, 0, width, 0);
+            grad.addColorStop(0, '#38BDF8');
+            grad.addColorStop(0.5, '#F59E0B');
+            grad.addColorStop(1, '#A78BFA');
+            ctx.strokeStyle = grad;
+            appliedGrad = true;
+          }
+        } catch {
+          appliedGrad = false;
+        }
+
+        if (!appliedGrad) {
           ctx.strokeStyle = '#F59E0B';
         }
         ctx.shadowColor = '#F59E0B';
-        ctx.shadowBlur = hasAudio ? 8 : 2;
+        ctx.shadowBlur = hasAudio ? 8 * dpr : 2 * dpr;
       } else {
         ctx.strokeStyle = '#D97706';
         ctx.shadowBlur = 0;
       }
+
       ctx.beginPath();
 
       const sliceWidth = width / waveform.length;
@@ -86,13 +103,12 @@ export const AudioWaveVisualizer: React.FC<AudioWaveVisualizerProps> = ({
 
   return (
     <div
-      className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-[#FAF8F5] dark:bg-[#0C0C10] border border-[#E5DFD7] dark:border-[#272736] shadow-xs"
+      className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-[#FAF8F5] dark:bg-[#15192C] border border-[#E5DFD7] dark:border-white/10 shadow-xs"
       title="Web Audio Real-Time Waveform Visualizer"
     >
       <canvas
         ref={canvasRef}
-        width={64}
-        height={20}
+        style={{ width: '72px', height: '22px' }}
         className="rounded opacity-90"
       />
     </div>

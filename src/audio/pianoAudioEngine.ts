@@ -275,12 +275,36 @@ class PianoAudioEngine {
     this.activeTimeoutIds.forEach((id) => clearTimeout(id));
     this.activeTimeoutIds = [];
 
+    try {
+      if (Tone.getTransport) {
+        const transport = Tone.getTransport();
+        if (transport) {
+          transport.stop();
+          transport.cancel();
+        }
+      }
+    } catch {
+      // Safe fallback for headless
+    }
+
     if (this.synth) {
-      this.synth.releaseAll();
+      try {
+        this.synth.releaseAll();
+      } catch {
+        // Safe fallback
+      }
     }
     if (this.rhodesSynth) {
-      this.rhodesSynth.releaseAll();
+      try {
+        this.rhodesSynth.releaseAll();
+      } catch {
+        // Safe fallback
+      }
     }
+  }
+
+  public stopProgression(): void {
+    this.stopPlayback();
   }
 }
 

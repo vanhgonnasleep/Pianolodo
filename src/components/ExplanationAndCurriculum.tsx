@@ -50,7 +50,7 @@ export const ExplanationAndCurriculum: React.FC<ExplanationAndCurriculumProps> =
     <div className="space-y-4">
       {/* Active Chord Explanation Section */}
       {activeChord && (
-        <div className="bg-[#FFFFFF] dark:bg-[#121217] border border-[#E5DFD7] dark:border-[#272736] rounded-2xl p-5 md:p-6 shadow-sm space-y-4 transition-colors">
+        <div className="aurora-card bg-[#FFFFFF]/90 dark:bg-[#1C203B]/80 backdrop-blur-xl border border-[#E5DFD7] dark:border-white/12 rounded-3xl p-5 md:p-6 shadow-sm space-y-4 transition-colors">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F5F1EB] dark:border-[#22222E] pb-3">
             <div className="flex items-center gap-2">
               <span className="text-xl font-extrabold text-[#1C1917] dark:text-[#F4F4F6]">{activeChord.symbol}</span>
