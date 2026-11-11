@@ -25,6 +25,7 @@ interface ClarionSidebarProps {
     chordCount: number;
     avgSmoothness: number;
   };
+  onOpenSongAnalyzer?: () => void;
 }
 
 export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
@@ -33,6 +34,7 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
   lang,
   onToggleLang,
   activeProgressionSummary,
+  onOpenSongAnalyzer,
 }) => {
   const navItems = [
     {
@@ -117,6 +119,22 @@ export const ClarionSidebar: React.FC<ClarionSidebarProps> = ({
               </button>
             );
           })}
+
+          {/* Special Feature: Audio & Song Accompaniment Analyzer */}
+          {onOpenSongAnalyzer && (
+            <button
+              onClick={onOpenSongAnalyzer}
+              className="w-full mt-3 flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-extrabold transition text-left bg-gradient-to-r from-sky-500/15 via-indigo-500/15 to-purple-500/15 hover:from-sky-500/25 hover:via-indigo-500/25 hover:to-purple-500/25 border border-sky-400/40 text-sky-500 dark:text-sky-300 shadow-[0_0_12px_rgba(56,189,248,0.2)]"
+            >
+              <Headphones className="w-4 h-4 text-sky-400 animate-pulse shrink-0" />
+              <div className="flex-1 min-w-0 flex items-center justify-between">
+                <span className="truncate">{lang === 'vi' ? 'Tách Hợp Âm Từ Nhạc' : 'Song to Chords'}</span>
+                <span className="px-1.5 py-0.5 rounded bg-sky-500/20 text-[10px] font-mono text-sky-400 dark:text-sky-300 font-bold border border-sky-400/30">
+                  AI
+                </span>
+              </div>
+            </button>
+          )}
         </nav>
       </div>
 

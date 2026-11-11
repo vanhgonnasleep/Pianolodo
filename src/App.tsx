@@ -424,6 +424,7 @@ export const App: React.FC = () => {
             chordCount: progressionState.reharmonizedChords.length,
             avgSmoothness,
           }}
+          onOpenSongAnalyzer={() => setIsSongAnalyzerOpen(true)}
         />
       </div>
 
@@ -453,6 +454,7 @@ export const App: React.FC = () => {
           onToggleTheoryDepth={handleToggleTheoryDepth}
           onExportMidi={handleExportMidi}
           onShareUrl={handleShareUrl}
+          onOpenSongAnalyzer={() => setIsSongAnalyzerOpen(true)}
         />
 
         {/* Global Toast Notification */}

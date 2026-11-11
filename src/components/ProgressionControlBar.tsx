@@ -172,6 +172,41 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
         </div>
       </div>
 
+      {/* Prominent Music & Audio Input Callout Banner */}
+      {onOpenSongAnalyzer && (
+        <div className="p-3.5 md:p-4 rounded-2xl bg-gradient-to-r from-[#2563EB]/15 via-[#38BDF8]/15 to-[#8B5CF6]/15 dark:from-[#2563EB]/25 dark:via-[#38BDF8]/25 dark:to-[#8B5CF6]/25 border border-[#38BDF8]/40 dark:border-[#38BDF8]/50 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#38BDF8] to-[#2563EB] flex items-center justify-center text-white shadow-md shadow-[#38BDF8]/30 shrink-0">
+              <Headphones className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-extrabold text-[#1C1917] dark:text-[#F8FAFC]">
+                  {lang === 'vi' ? 'Input Nhạc Vào: AI Dò & Phối Hợp Âm Đệm Tự Động' : 'Audio Input: AI Chord Accompaniment Analyzer'}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-[#38BDF8]/20 text-[#0284C7] dark:text-[#38BDF8] text-[10px] font-mono font-extrabold border border-[#38BDF8]/40">
+                  AI DSP
+                </span>
+              </div>
+              <p className="text-xs text-[#78716C] dark:text-[#CBD5E1] mt-0.5">
+                {lang === 'vi'
+                  ? 'Kéo thả file nhạc (.MP3 / .WAV / .MID), ngân nga qua Mic, hoặc bấm nghe thử bản Demo để AI tự dò Tone và ném ra 3 bản phối đệm piano!'
+                  : 'Drop audio files (.MP3 / .WAV / .MID), hum into Mic, or test instant demo to automatically extract piano accompaniment chords!'}
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onOpenSongAnalyzer}
+            className="pressable px-4 py-2 rounded-xl bg-gradient-to-r from-[#38BDF8] via-[#2563EB] to-[#8B5CF6] hover:from-[#60A5FA] hover:to-[#A78BFA] text-white font-extrabold text-xs shadow-md shadow-[#38BDF8]/30 flex items-center justify-center gap-2 transition shrink-0"
+          >
+            <Sparkles className="w-4 h-4 fill-current" />
+            <span>{lang === 'vi' ? '🎧 Tách Nhạc / Mic Ngay' : '🎧 Analyze Song / Mic'}</span>
+          </button>
+        </div>
+      )}
+
       {/* Second row: Progression Input + Voicing Topology + Song Analyzer Quick Trigger */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
         {/* Progression Input Bar */}
@@ -186,8 +221,19 @@ export const ProgressionControlBar: React.FC<ProgressionControlBarProps> = ({
               value={rawInput}
               onChange={(e) => onInputChange(e.target.value)}
               placeholder={t('inputPlaceholder', lang)}
-              className="w-full bg-[#FAF8F5] dark:bg-[#15192C] border border-[#E5DFD7] dark:border-white/10 rounded-xl px-4 py-2 text-base md:text-lg font-bold text-[#1C1917] dark:text-[#F8FAFC] focus:outline-none focus:border-[#D97706] dark:focus:border-[#38BDF8] focus:ring-1 focus:ring-[#D97706] dark:focus:ring-[#38BDF8] transition shadow-inner font-mono tracking-wider"
+              className="w-full bg-[#FAF8F5] dark:bg-[#15192C] border border-[#E5DFD7] dark:border-white/10 rounded-xl pl-4 pr-32 py-2 text-base md:text-lg font-bold text-[#1C1917] dark:text-[#F8FAFC] focus:outline-none focus:border-[#D97706] dark:focus:border-[#38BDF8] focus:ring-1 focus:ring-[#D97706] dark:focus:ring-[#38BDF8] transition shadow-inner font-mono tracking-wider"
             />
+            {onOpenSongAnalyzer && (
+              <button
+                type="button"
+                onClick={onOpenSongAnalyzer}
+                title={lang === 'vi' ? 'Input file nhạc hoặc thu âm mic' : 'Input audio file or record mic'}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-lg bg-[#38BDF8]/15 hover:bg-[#38BDF8]/25 text-[#0284C7] dark:text-[#38BDF8] border border-[#38BDF8]/30 text-xs font-bold flex items-center gap-1.5 transition"
+              >
+                <Headphones className="w-3.5 h-3.5" />
+                <span>{lang === 'vi' ? 'Tách Nhạc' : 'Audio Input'}</span>
+              </button>
+            )}
           </div>
         </div>
 
