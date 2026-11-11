@@ -429,7 +429,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* 2. Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto overflow-x-hidden relative z-10">
         {/* Clarion Top Nav */}
         <ClarionTopNav
           keyRoot={keyRoot}
