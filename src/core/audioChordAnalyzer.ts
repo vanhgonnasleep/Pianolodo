@@ -1,11 +1,42 @@
 import { Chord, Note } from '@tonaljs/tonal';
 
+export interface DetectedNoteEvent {
+  note: string;         // e.g. "C3", "G3", "E4"
+  midi: number;         // e.g. 48, 55, 64
+  timeOffset: number;   // seconds from track start
+  duration: number;     // note duration in seconds
+  layer: 'bass' | 'voicing' | 'melody';
+  velocity: number;     // normalized 0 - 100
+}
+
+export interface LyricChordToken {
+  chordSymbol?: string; // e.g. "Dm9"
+  melodyNote?: string;  // e.g. "F4"
+  arpeggioHint?: string;// e.g. "D2→A2→F3→C4"
+  text: string;         // lyric word/phrase
+}
+
+export interface LyricLineSegment {
+  startTime: number;
+  endTime: number;
+  rawText: string;
+  tokens: LyricChordToken[];
+}
+
 export interface DetectedChordSegment {
   startTime: number;
   endTime: number;
   chordSymbol: string;
   romanDegree: string;
   confidence: number;
+  // 3-Layer Note-by-Note Breakdown ("Đánh nốt gì, nốt gì")
+  bassNote: string;             // Left-hand lowest bass root/inversion (e.g. "C2", "B1", "A2")
+  leftHandNotes: string[];      // Left-hand shell/fifth notes (e.g. ["C2", "G2"])
+  rightHandNotes: string[];     // Right-hand voicing cluster (e.g. ["E3", "G3", "B3", "D4"])
+  arpeggioSequence: string[];   // Time-ordered sequence of notes played in this bar (e.g. ["C2", "G2", "E3", "G3", "C4", "E4"])
+  vocalMelodyNotes: string[];   // Singer's vocal melody notes detected in this bar (e.g. ["E4", "G4", "A4"])
+  noteEvents: DetectedNoteEvent[];
+  lyricSnippet?: string;
 }
 
 export interface AccompanimentOption {
@@ -27,15 +58,16 @@ export interface SongAnalysisResult {
   segments: DetectedChordSegment[];
   rawFormula: string;
   accompaniments: AccompanimentOption[];
+  lyricLines: LyricLineSegment[];
+  audioWavBase64?: string; // Compact 16kHz mono WAV base64 for Gemini Multimodal Audio analysis
 }
 
 export const PITCH_CLASSES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
 
-// Chord templates for 12-bin Pitch Class Profile (PCP) matching
 export interface ChordTemplate {
   quality: string;
   symbolSuffix: string;
-  intervals: number[]; // semitone offsets from root
+  intervals: number[];
   weights: number[];
 }
 
@@ -50,13 +82,15 @@ export const CHORD_TEMPLATES: ChordTemplate[] = [
   { quality: 'Suspended 4', symbolSuffix: 'sus4', intervals: [0, 5, 7], weights: [1.0, 0.8, 0.8] },
 ];
 
-// Krumhansl-Schmuckler Key Profiles for Key Determination
 export const KRUMHANSL_MAJOR = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
 export const KRUMHANSL_MINOR = [6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
 
-/**
- * Computes cosine similarity between two 12-dimensional vectors
- */
+export function midiToNoteName(midi: number): string {
+  const pc = PITCH_CLASSES[((midi % 12) + 12) % 12];
+  const octave = Math.floor(midi / 12) - 1;
+  return `${pc}${octave}`;
+}
+
 export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   let dotProduct = 0;
   let normA = 0;
@@ -70,9 +104,6 @@ export function cosineSimilarity(vecA: number[], vecB: number[]): number {
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
-/**
- * Builds a 12-bin template vector for a root pitch class and chord template
- */
 export function buildChordVector(rootIndex: number, template: ChordTemplate): number[] {
   const vec = new Array(12).fill(0);
   template.intervals.forEach((interval, idx) => {
@@ -82,9 +113,6 @@ export function buildChordVector(rootIndex: number, template: ChordTemplate): nu
   return vec;
 }
 
-/**
- * Matches a 12-bin chromagram vector against standard chord templates
- */
 export function matchChromaToChord(chroma: number[]): { symbol: string; confidence: number } {
   let bestScore = -1;
   let bestSymbol = 'C';
@@ -105,16 +133,12 @@ export function matchChromaToChord(chroma: number[]): { symbol: string; confiden
   return { symbol: bestSymbol, confidence };
 }
 
-/**
- * Infers Global Musical Key (Root + Mode) via Krumhansl-Schmuckler profiles
- */
 export function detectKeyFromChromaSum(chromaSum: number[]): string {
   let bestScore = -Infinity;
   let bestKey = 'C';
 
   for (let r = 0; r < 12; r++) {
     const rootName = PITCH_CLASSES[r];
-    // Rotate Krumhansl profile to root
     const rotatedMajor = KRUMHANSL_MAJOR.map((_, i) => KRUMHANSL_MAJOR[(i - r + 12) % 12]);
     const rotatedMinor = KRUMHANSL_MINOR.map((_, i) => KRUMHANSL_MINOR[(i - r + 12) % 12]);
 
@@ -134,11 +158,9 @@ export function detectKeyFromChromaSum(chromaSum: number[]): string {
   return bestKey;
 }
 
-/**
- * Maps a chord symbol to Roman numeral degree relative to the detected key
- */
 export function calculateRomanDegree(chordSymbol: string, keyRoot: string): string {
-  const chordRoot = Chord.get(chordSymbol).tonic || chordSymbol.replace(/[^A-G#b]/g, '') || 'C';
+  const baseSymbol = chordSymbol.split('/')[0];
+  const chordRoot = Chord.get(baseSymbol).tonic || baseSymbol.replace(/[^A-G#b]/g, '') || 'C';
   const cleanKey = keyRoot.replace('m', '');
   const isMinorKey = keyRoot.endsWith('m');
 
@@ -146,7 +168,7 @@ export function calculateRomanDegree(chordSymbol: string, keyRoot: string): stri
   const keyMidi = Note.midi(`${cleanKey}4`) || 60;
   const semitones = ((rootMidi - keyMidi) % 12 + 12) % 12;
 
-  const isMinorChord = chordSymbol.includes('m') && !chordSymbol.includes('maj');
+  const isMinorChord = baseSymbol.includes('m') && !baseSymbol.includes('maj');
 
   const majorDegrees: Record<number, string> = {
     0: 'I',
@@ -182,9 +204,6 @@ export function calculateRomanDegree(chordSymbol: string, keyRoot: string): stri
   return degreeMap[semitones] || 'I';
 }
 
-/**
- * Generates 3 rich reharmonized accompaniment options from detected raw progression
- */
 export function generateAccompanimentOptions(
   rawChords: string[],
   keyRoot: string
@@ -192,10 +211,10 @@ export function generateAccompanimentOptions(
   const cleanKey = keyRoot.replace('m', '');
   const chords = rawChords.length > 0 ? rawChords : ['C', 'Am', 'F', 'G'];
 
-  // Option 1: Pop Ballad Sâu Lắng (Add9 / Sus4 / Slash Bass)
   const balladChords = chords.map((c, i) => {
-    const root = Chord.get(c).tonic || c.replace(/[^A-G#b]/g, '') || cleanKey;
-    const isMinor = c.includes('m') && !c.includes('maj');
+    const base = c.split('/')[0];
+    const root = Chord.get(base).tonic || base.replace(/[^A-G#b]/g, '') || cleanKey;
+    const isMinor = base.includes('m') && !base.includes('maj');
     if (i === 0 && !isMinor) return `${root}add9`;
     if (isMinor) return `${root}m7`;
     if (i === chords.length - 1) return `${root}sus4`;
@@ -203,21 +222,20 @@ export function generateAccompanimentOptions(
     return `${root}add9`;
   });
 
-  // Option 2: R&B / Neo-Soul Chill (Maj9 / m9 / m11 Lush Extensions)
   const rnbChords = chords.map((c, i) => {
-    const root = Chord.get(c).tonic || c.replace(/[^A-G#b]/g, '') || cleanKey;
-    const isMinor = c.includes('m') && !c.includes('maj');
+    const base = c.split('/')[0];
+    const root = Chord.get(base).tonic || base.replace(/[^A-G#b]/g, '') || cleanKey;
+    const isMinor = base.includes('m') && !base.includes('maj');
     if (isMinor) return i % 2 === 0 ? `${root}m9` : `${root}m11`;
     if (i === chords.length - 1) return `${root}13`;
     return `${root}maj9`;
   });
 
-  // Option 3: Jazz 2-5-1 Lounge (Secondary Dominants & Tritone Substitutions)
   const jazzChords = chords.map((c, i) => {
-    const root = Chord.get(c).tonic || c.replace(/[^A-G#b]/g, '') || cleanKey;
-    const isMinor = c.includes('m') && !c.includes('maj');
+    const base = c.split('/')[0];
+    const root = Chord.get(base).tonic || base.replace(/[^A-G#b]/g, '') || cleanKey;
+    const isMinor = base.includes('m') && !base.includes('maj');
     if (i === chords.length - 1) {
-      // Tritone substitution: bII7 of tonic
       return `${Note.transpose(cleanKey, '2m')}7#11`;
     }
     if (isMinor) return `${root}9`;
@@ -259,7 +277,35 @@ export function generateAccompanimentOptions(
 }
 
 /**
- * Extracts 12-bin Chromagram from audio PCM channel data using Goertzel / discrete frequency bank
+ * Computes Goertzel magnitude for a specific MIDI note in a sample slice
+ */
+function computeMidiEnergy(
+  channelData: Float32Array,
+  sampleRate: number,
+  startSample: number,
+  endSample: number,
+  midi: number
+): number {
+  const N = endSample - startSample;
+  if (N <= 0) return 0;
+  const freq = 440 * Math.pow(2, (midi - 69) / 12);
+  const k = Math.round((N * freq) / sampleRate);
+  const omega = (2 * Math.PI * k) / N;
+  const coeff = 2 * Math.cos(omega);
+
+  let s_prev = 0;
+  let s_prev2 = 0;
+  for (let i = startSample; i < endSample; i++) {
+    const s = channelData[i] + coeff * s_prev - s_prev2;
+    s_prev2 = s_prev;
+    s_prev = s;
+  }
+  const power = s_prev2 * s_prev2 + s_prev * s_prev - coeff * s_prev * s_prev2;
+  return Math.max(0, Math.sqrt(Math.max(0, power))) / N;
+}
+
+/**
+ * Extracts 12-bin Chromagram from audio PCM channel data using Goertzel frequency bank
  */
 export function extractChromagramFromPcm(
   channelData: Float32Array,
@@ -269,31 +315,13 @@ export function extractChromagramFromPcm(
 ): number[] {
   const chroma = new Array(12).fill(0);
   const endSample = Math.min(channelData.length, startSample + windowLength);
-  const N = endSample - startSample;
-  if (N <= 0) return chroma;
+  if (endSample - startSample <= 0) return chroma;
 
-  // Scan 36 piano pitches from C2 (65.4Hz) to B4 (493.88Hz)
   for (let midi = 36; midi <= 71; midi++) {
     const pitchClass = midi % 12;
-    const freq = 440 * Math.pow(2, (midi - 69) / 12);
-    const k = Math.round((N * freq) / sampleRate);
-    const omega = (2 * Math.PI * k) / N;
-    const coeff = 2 * Math.cos(omega);
-
-    let s_prev = 0;
-    let s_prev2 = 0;
-
-    for (let i = startSample; i < endSample; i++) {
-      const s = channelData[i] + coeff * s_prev - s_prev2;
-      s_prev2 = s_prev;
-      s_prev = s;
-    }
-
-    const power = s_prev2 * s_prev2 + s_prev * s_prev - coeff * s_prev * s_prev2;
-    chroma[pitchClass] += Math.max(0, Math.sqrt(Math.max(0, power)));
+    chroma[pitchClass] += computeMidiEnergy(channelData, sampleRate, startSample, endSample, midi);
   }
 
-  // Normalize chroma
   const sum = chroma.reduce((a, b) => a + b, 0);
   if (sum > 0) {
     for (let i = 0; i < 12; i++) {
@@ -305,7 +333,317 @@ export function extractChromagramFromPcm(
 }
 
 /**
- * Analyzes decoded Web Audio Buffer and produces timestamped chord timeline + accompaniment options
+ * Multi-band 3-Layer Note Extractor ("Ca sĩ / người đệm đã đánh nốt gì, nốt gì"):
+ * 1. Left Hand Bass (MIDI 36..52 / C2..E3)
+ * 2. Right Hand Voicing & Sub-frame Arpeggio Roll (MIDI 53..76 / F3..E5)
+ * 3. Vocal Melody Pitch Contour (MIDI 60..81 / C4..A5)
+ */
+export function extractThreeLayerNotesFromPcm(
+  channelData: Float32Array,
+  sampleRate: number,
+  startSample: number,
+  windowLength: number,
+  windowStartTime = 0,
+  fallbackChordSymbol = 'C'
+): {
+  bassNote: string;
+  leftHandNotes: string[];
+  rightHandNotes: string[];
+  arpeggioSequence: string[];
+  vocalMelodyNotes: string[];
+  noteEvents: DetectedNoteEvent[];
+  slashChordSymbol?: string;
+} {
+  const endSample = Math.min(channelData.length, startSample + windowLength);
+  const totalSamples = endSample - startSample;
+
+  if (totalSamples <= 128) {
+    return buildDeterministicNotesForChord(fallbackChordSymbol, windowStartTime);
+  }
+
+  // 1. Scan Bass Range (MIDI 36 = C2 to MIDI 51 = Eb3)
+  let bestBassMidi = 36;
+  let maxBassEnergy = -1;
+  const bassEnergies: Array<{ midi: number; energy: number }> = [];
+
+  for (let midi = 36; midi <= 51; midi++) {
+    const energy = computeMidiEnergy(channelData, sampleRate, startSample, endSample, midi);
+    bassEnergies.push({ midi, energy });
+    if (energy > maxBassEnergy) {
+      maxBassEnergy = energy;
+      bestBassMidi = midi;
+    }
+  }
+
+  if (maxBassEnergy <= 1e-6) {
+    return buildDeterministicNotesForChord(fallbackChordSymbol, windowStartTime);
+  }
+
+  const bassNote = midiToNoteName(bestBassMidi);
+  const fifthMidi = bestBassMidi + 7 <= 55 ? bestBassMidi + 7 : bestBassMidi;
+  const leftHandNotes = Array.from(new Set([bassNote, midiToNoteName(fifthMidi)]));
+
+  // 2. Scan Sub-Frames (6 sub-slices per window) to capture time-ordered Arpeggio / Note Roll
+  const numSlices = 6;
+  const sliceLen = Math.max(64, Math.floor(totalSamples / numSlices));
+  const arpeggioSequence: string[] = [bassNote];
+  const noteEvents: DetectedNoteEvent[] = [
+    {
+      note: bassNote,
+      midi: bestBassMidi,
+      timeOffset: Number(windowStartTime.toFixed(2)),
+      duration: Number(((totalSamples / sampleRate) * 0.85).toFixed(2)),
+      layer: 'bass',
+      velocity: 88,
+    },
+  ];
+
+  const voicingMidiCounts = new Map<number, number>();
+  const vocalMelodyNotes: string[] = [];
+
+  for (let s = 0; s < numSlices; s++) {
+    const sStart = startSample + s * sliceLen;
+    const sEnd = Math.min(endSample, sStart + sliceLen);
+    if (sEnd - sStart <= 32) continue;
+
+    const sliceTime = windowStartTime + ((s * sliceLen) / sampleRate);
+    const sliceDur = sliceLen / sampleRate;
+
+    // Scan Mid-Range Right-Hand Voicing (MIDI 52 = E3 to MIDI 74 = D5)
+    let bestMidMidi = 60;
+    let bestMidEnergy = -1;
+    for (let midi = 52; midi <= 74; midi++) {
+      const e = computeMidiEnergy(channelData, sampleRate, sStart, sEnd, midi);
+      if (e > bestMidEnergy) {
+        bestMidEnergy = e;
+        bestMidMidi = midi;
+      }
+    }
+
+    if (bestMidEnergy > maxBassEnergy * 0.08) {
+      const noteName = midiToNoteName(bestMidMidi);
+      voicingMidiCounts.set(bestMidMidi, (voicingMidiCounts.get(bestMidMidi) || 0) + bestMidEnergy);
+      if (arpeggioSequence[arpeggioSequence.length - 1] !== noteName) {
+        arpeggioSequence.push(noteName);
+      }
+      noteEvents.push({
+        note: noteName,
+        midi: bestMidMidi,
+        timeOffset: Number(sliceTime.toFixed(2)),
+        duration: Number(sliceDur.toFixed(2)),
+        layer: 'voicing',
+        velocity: Math.min(96, Math.max(55, Math.round((bestMidEnergy / (maxBassEnergy || 1)) * 85))),
+      });
+    }
+
+    // Scan Upper Vocal / Lead Melody Range (MIDI 62 = D4 to MIDI 79 = G5)
+    if (s % 2 === 0) {
+      let bestVocalMidi = 67;
+      let bestVocalEnergy = -1;
+      for (let midi = 62; midi <= 79; midi++) {
+        const e = computeMidiEnergy(channelData, sampleRate, sStart, sEnd, midi);
+        if (e > bestVocalEnergy) {
+          bestVocalEnergy = e;
+          bestVocalMidi = midi;
+        }
+      }
+      if (bestVocalEnergy > maxBassEnergy * 0.1) {
+        const vNote = midiToNoteName(bestVocalMidi);
+        if (vocalMelodyNotes[vocalMelodyNotes.length - 1] !== vNote) {
+          vocalMelodyNotes.push(vNote);
+        }
+        noteEvents.push({
+          note: vNote,
+          midi: bestVocalMidi,
+          timeOffset: Number(sliceTime.toFixed(2)),
+          duration: Number((sliceDur * 1.8).toFixed(2)),
+          layer: 'melody',
+          velocity: 92,
+        });
+      }
+    }
+  }
+
+  // Sort right-hand voicing notes by energy & pitch
+  const sortedRightMidis = Array.from(voicingMidiCounts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map((entry) => entry[0])
+    .sort((a, b) => a - b);
+
+  const rightHandNotes =
+    sortedRightMidis.length >= 2
+      ? sortedRightMidis.map(midiToNoteName)
+      : buildDeterministicNotesForChord(fallbackChordSymbol, windowStartTime).rightHandNotes;
+
+  if (vocalMelodyNotes.length === 0) {
+    vocalMelodyNotes.push(rightHandNotes[rightHandNotes.length - 1] || 'E4');
+  }
+
+  // Check if Bass Note forms a Slash Chord inversion (e.g. C chord with E2 bass -> C/E)
+  const chordTonic = Chord.get(fallbackChordSymbol).tonic || fallbackChordSymbol.replace(/[^A-G#b]/g, '') || 'C';
+  const bassPc = bassNote.replace(/[0-9-]/g, '');
+  const chordPitchClasses = Chord.get(fallbackChordSymbol).notes;
+  let slashChordSymbol: string | undefined;
+  if (bassPc && bassPc !== chordTonic && chordPitchClasses.includes(bassPc)) {
+    slashChordSymbol = `${fallbackChordSymbol.split('/')[0]}/${bassPc}`;
+  }
+
+  return {
+    bassNote,
+    leftHandNotes,
+    rightHandNotes,
+    arpeggioSequence: arpeggioSequence.slice(0, 7),
+    vocalMelodyNotes: vocalMelodyNotes.slice(0, 4),
+    noteEvents,
+    slashChordSymbol,
+  };
+}
+
+/**
+ * Builds musical 3-layer notes (LH Bass, RH Voicing, Arpeggio pattern, Vocal Melody) for a given chord symbol
+ */
+export function buildDeterministicNotesForChord(
+  chordSymbol: string,
+  windowStartTime = 0
+): {
+  bassNote: string;
+  leftHandNotes: string[];
+  rightHandNotes: string[];
+  arpeggioSequence: string[];
+  vocalMelodyNotes: string[];
+  noteEvents: DetectedNoteEvent[];
+} {
+  const parts = chordSymbol.split('/');
+  const baseSymbol = parts[0];
+  const slashBass = parts[1];
+  const parsed = Chord.get(baseSymbol);
+  const root = parsed.tonic || baseSymbol.replace(/[^A-G#b]/g, '') || 'C';
+  const bassPc = slashBass || root;
+
+  const bassNote = `${bassPc}2`;
+  const fifthPc = Note.transpose(bassPc, '5P') || 'G';
+  const leftHandNotes = [bassNote, `${fifthPc}2`];
+
+  const chordNotes = parsed.notes.length >= 3 ? parsed.notes : [root, Note.transpose(root, '3M'), Note.transpose(root, '5P')];
+  const rightHandNotes = chordNotes.slice(0, 4).map((n, idx) => `${n}${idx === 0 ? 3 : 4}`);
+  const arpeggioSequence = [bassNote, `${fifthPc}2`, ...rightHandNotes, rightHandNotes[1] || rightHandNotes[0]];
+  const vocalMelodyNotes = [
+    rightHandNotes[rightHandNotes.length - 1] || `${root}4`,
+    `${Note.transpose(root, '2M')}4`,
+    rightHandNotes[0]?.replace('3', '4') || `${root}4`,
+  ];
+
+  const noteEvents: DetectedNoteEvent[] = arpeggioSequence.map((note, idx) => ({
+    note,
+    midi: Note.midi(note) || 60,
+    timeOffset: Number((windowStartTime + idx * 0.25).toFixed(2)),
+    duration: 0.35,
+    layer: idx < 2 ? 'bass' : 'voicing',
+    velocity: idx === 0 ? 90 : 76,
+  }));
+
+  return {
+    bassNote,
+    leftHandNotes,
+    rightHandNotes,
+    arpeggioSequence,
+    vocalMelodyNotes,
+    noteEvents,
+  };
+}
+
+/**
+ * Encodes an AudioBuffer (first 25 seconds max) into a compact 16kHz Mono 16-bit PCM WAV Base64 string
+ * for sending directly to Gemini 2.5 Flash Multimodal Audio API.
+ */
+export function encodeAudioBufferToWavBase64(audioBuffer: AudioBuffer, maxSeconds = 24): string {
+  const srcRate = audioBuffer.sampleRate;
+  const targetRate = 16000;
+  const srcData = audioBuffer.getChannelData(0);
+  const maxSrcSamples = Math.min(srcData.length, Math.floor(maxSeconds * srcRate));
+  const ratio = srcRate / targetRate;
+  const numSamples = Math.max(1, Math.floor(maxSrcSamples / ratio));
+
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+
+  const writeStr = (offset: number, str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  };
+
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // Mono
+  view.setUint32(24, targetRate, true);
+  view.setUint32(28, targetRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < numSamples; i++) {
+    const srcIdx = Math.min(maxSrcSamples - 1, Math.floor(i * ratio));
+    const sample = Math.max(-1, Math.min(1, srcData[srcIdx]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+    offset += 2;
+  }
+
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return typeof btoa === 'function' ? btoa(binary) : '';
+}
+
+/**
+ * Default synced lyrics generator for initial segments before custom/AI lyrics override
+ */
+function buildDefaultLyricLinesFromSegments(segments: DetectedChordSegment[]): LyricLineSegment[] {
+  const defaultPhrasesVi = [
+    'Đoạn mở đầu giai điệu ngân vang...',
+    'Chuyển hòa âm sâu lắng qua từng phím đàn...',
+    'Cao trào cảm xúc dâng lên êm ái...',
+    'Đáp về nốt kết dịu dàng sâu lắng...',
+  ];
+
+  return segments.map((seg, idx) => {
+    const phrase = seg.lyricSnippet || defaultPhrasesVi[idx % defaultPhrasesVi.length];
+    const words = phrase.split(' ');
+    const midIdx = Math.max(1, Math.floor(words.length / 2));
+    const firstHalf = words.slice(0, midIdx).join(' ') + ' ';
+    const secondHalf = words.slice(midIdx).join(' ');
+
+    return {
+      startTime: seg.startTime,
+      endTime: seg.endTime,
+      rawText: phrase,
+      tokens: [
+        {
+          chordSymbol: seg.chordSymbol,
+          melodyNote: seg.vocalMelodyNotes[0] || 'E4',
+          arpeggioHint: seg.arpeggioSequence.slice(0, 4).join('→'),
+          text: firstHalf,
+        },
+        {
+          melodyNote: seg.vocalMelodyNotes[1] || seg.vocalMelodyNotes[0] || 'D4',
+          text: secondHalf,
+        },
+      ],
+    };
+  });
+}
+
+/**
+ * Analyzes decoded Web Audio Buffer and produces timestamped chord timeline + 3-layer notes + accompaniment options
  */
 export async function analyzeAudioBuffer(
   audioBuffer: AudioBuffer,
@@ -315,7 +653,6 @@ export async function analyzeAudioBuffer(
   const duration = audioBuffer.duration;
   const channelData = audioBuffer.getChannelData(0);
 
-  // Divide into 1.75-second measure windows (or minimum 4 windows)
   const windowSec = Math.max(1.5, Math.min(2.5, duration / 4));
   const windowSamples = Math.floor(windowSec * sampleRate);
   const totalWindows = Math.max(1, Math.floor(channelData.length / windowSamples));
@@ -325,8 +662,8 @@ export async function analyzeAudioBuffer(
 
   for (let w = 0; w < totalWindows; w++) {
     const startSample = w * windowSamples;
-    const startTime = (startSample / sampleRate);
-    const endTime = Math.min(duration, ((startSample + windowSamples) / sampleRate));
+    const startTime = startSample / sampleRate;
+    const endTime = Math.min(duration, (startSample + windowSamples) / sampleRate);
 
     const chroma = extractChromagramFromPcm(channelData, sampleRate, startSample, windowSamples);
     for (let i = 0; i < 12; i++) {
@@ -334,12 +671,29 @@ export async function analyzeAudioBuffer(
     }
 
     const match = matchChromaToChord(chroma);
+    const layerNotes = extractThreeLayerNotesFromPcm(
+      channelData,
+      sampleRate,
+      startSample,
+      windowSamples,
+      startTime,
+      match.symbol
+    );
+
+    const finalSymbol = layerNotes.slashChordSymbol || match.symbol;
+
     segments.push({
       startTime: Number(startTime.toFixed(2)),
       endTime: Number(endTime.toFixed(2)),
-      chordSymbol: match.symbol,
-      romanDegree: 'I', // Updated after key detection
+      chordSymbol: finalSymbol,
+      romanDegree: 'I',
       confidence: match.confidence,
+      bassNote: layerNotes.bassNote,
+      leftHandNotes: layerNotes.leftHandNotes,
+      rightHandNotes: layerNotes.rightHandNotes,
+      arpeggioSequence: layerNotes.arpeggioSequence,
+      vocalMelodyNotes: layerNotes.vocalMelodyNotes,
+      noteEvents: layerNotes.noteEvents,
     });
 
     if (onProgress) {
@@ -347,18 +701,14 @@ export async function analyzeAudioBuffer(
     }
   }
 
-  // Detect Key
   const detectedKey = detectKeyFromChromaSum(fullChromaSum);
 
-  // Update Roman degrees
   segments.forEach((seg) => {
     seg.romanDegree = calculateRomanDegree(seg.chordSymbol, detectedKey);
   });
 
-  // Estimate BPM (based on window duration or standard 85 bpm)
   const estimatedBpm = Math.min(135, Math.max(70, Math.round(60 / (windowSec / 2))));
 
-  // Filter out immediate identical duplicates for clean formula
   const rawChords = segments.map((s) => s.chordSymbol);
   const distinctChords = rawChords.filter((c, i) => i === 0 || c !== rawChords[i - 1]);
   const rawFormula = (distinctChords.length > 0 ? distinctChords : ['C', 'Am', 'F', 'G']).join(' - ');
@@ -372,6 +722,13 @@ export async function analyzeAudioBuffer(
     segments.reduce((acc, s) => acc + s.confidence, 0) / (segments.length || 1)
   );
 
+  let audioWavBase64: string | undefined;
+  try {
+    audioWavBase64 = encodeAudioBufferToWavBase64(audioBuffer, 24);
+  } catch {
+    audioWavBase64 = undefined;
+  }
+
   if (onProgress) {
     onProgress(100);
   }
@@ -384,11 +741,13 @@ export async function analyzeAudioBuffer(
     segments,
     rawFormula,
     accompaniments,
+    lyricLines: buildDefaultLyricLinesFromSegments(segments),
+    audioWavBase64,
   };
 }
 
 /**
- * Analyzes audio file (Blob / File / ArrayBuffer)
+ * Analyzes audio or video file (.MP4, .MOV, .WEBM, .MP3, .WAV, .M4A)
  */
 export async function analyzeAudioFile(
   fileOrBuffer: File | ArrayBuffer,
@@ -401,14 +760,12 @@ export async function analyzeAudioFile(
     arrayBuffer = await fileOrBuffer.arrayBuffer();
   }
 
-  // Headless environment / Fallback mock safety guard
   const AudioCtx =
     typeof window !== 'undefined'
       ? window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
       : null;
 
   if (!AudioCtx) {
-    // Deterministic fallback for test environments without Web Audio API
     return createFallbackDemoResult('C', 85);
   }
 
@@ -424,6 +781,85 @@ export async function analyzeAudioFile(
 }
 
 /**
+ * Captures live digital audio & video directly from a Facebook / YouTube browser tab via getDisplayMedia
+ */
+export async function captureTabAudioAndAnalyze(
+  durationSeconds = 8,
+  onCountdown?: (remainingSec: number) => void,
+  onProgress?: (pct: number) => void,
+  onStreamReady?: (stream: MediaStream) => void
+): Promise<SongAnalysisResult> {
+  if (
+    typeof navigator === 'undefined' ||
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.getDisplayMedia !== 'function'
+  ) {
+    return createFallbackDemoResult('C', 85);
+  }
+
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: true,
+  });
+
+  if (onStreamReady) {
+    onStreamReady(stream);
+  }
+
+  const audioTracks = stream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    stream.getTracks().forEach((t) => t.stop());
+    throw new Error('NO_TAB_AUDIO_TRACK');
+  }
+
+  const AudioCtx =
+    window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  const audioCtx = new AudioCtx({ sampleRate: 22050 });
+  const audioOnlyStream = new MediaStream(audioTracks);
+  const source = audioCtx.createMediaStreamSource(audioOnlyStream);
+
+  const bufferLength = Math.floor(durationSeconds * audioCtx.sampleRate);
+  const channelBuffer = new Float32Array(bufferLength);
+  let writeIndex = 0;
+
+  const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+  processor.onaudioprocess = (e) => {
+    const inputData = e.inputBuffer.getChannelData(0);
+    for (let i = 0; i < inputData.length && writeIndex < bufferLength; i++) {
+      channelBuffer[writeIndex++] = inputData[i];
+    }
+  };
+
+  source.connect(processor);
+  processor.connect(audioCtx.destination);
+
+  let remaining = durationSeconds;
+  if (onCountdown) onCountdown(remaining);
+  await new Promise<void>((resolve) => {
+    const interval = setInterval(() => {
+      remaining -= 1;
+      if (onCountdown) onCountdown(remaining);
+      if (remaining <= 0) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 1000);
+  });
+
+  processor.disconnect();
+  source.disconnect();
+  stream.getTracks().forEach((track) => track.stop());
+
+  const safeLength = Math.max(1024, writeIndex);
+  const finalBuffer = audioCtx.createBuffer(1, safeLength, audioCtx.sampleRate);
+  finalBuffer.copyToChannel(channelBuffer.subarray(0, safeLength), 0);
+
+  const result = await analyzeAudioBuffer(finalBuffer, onProgress);
+  await audioCtx.close();
+  return result;
+}
+
+/**
  * Records live audio from user's microphone with simulated fallback if permission denied
  */
 export async function recordMicrophoneAndAnalyze(
@@ -436,7 +872,6 @@ export async function recordMicrophoneAndAnalyze(
     !navigator.mediaDevices ||
     typeof navigator.mediaDevices.getUserMedia !== 'function'
   ) {
-    // Headless / non-browser fallback
     return createFallbackDemoResult('C', 80);
   }
 
@@ -446,7 +881,6 @@ export async function recordMicrophoneAndAnalyze(
     const audioCtx = new AudioCtx({ sampleRate: 22050 });
     const source = audioCtx.createMediaStreamSource(stream);
 
-    // Record into buffer
     const bufferLength = Math.floor(durationSeconds * audioCtx.sampleRate);
     const channelBuffer = new Float32Array(bufferLength);
     let writeIndex = 0;
@@ -462,7 +896,6 @@ export async function recordMicrophoneAndAnalyze(
     source.connect(processor);
     processor.connect(audioCtx.destination);
 
-    // Countdown interval
     let remaining = durationSeconds;
     if (onCountdown) onCountdown(remaining);
     await new Promise<void>((resolve) => {
@@ -476,13 +909,12 @@ export async function recordMicrophoneAndAnalyze(
       }, 1000);
     });
 
-    // Cleanup recording nodes & tracks
     processor.disconnect();
     source.disconnect();
     stream.getTracks().forEach((track) => track.stop());
 
-    const finalBuffer = audioCtx.createBuffer(1, writeIndex, audioCtx.sampleRate);
-    finalBuffer.copyToChannel(channelBuffer.subarray(0, writeIndex), 0);
+    const finalBuffer = audioCtx.createBuffer(1, Math.max(1024, writeIndex), audioCtx.sampleRate);
+    finalBuffer.copyToChannel(channelBuffer.subarray(0, Math.max(1024, writeIndex)), 0);
 
     const result = await analyzeAudioBuffer(finalBuffer, onProgress);
     await audioCtx.close();
@@ -510,11 +942,10 @@ export async function createInstantDemoTrackAndAnalyze(
   try {
     const audioCtx = new AudioCtx({ sampleRate: 22050 });
     const sampleRate = audioCtx.sampleRate;
-    const duration = 7.0; // 7 seconds
+    const duration = 7.0;
     const audioBuffer = audioCtx.createBuffer(1, Math.floor(duration * sampleRate), sampleRate);
     const data = audioBuffer.getChannelData(0);
 
-    // 4 Chords: C (0-1.75s), Am (1.75-3.5s), F (3.5-5.25s), G (5.25-7.0s)
     const chordFrequencies = [
       [130.81, 261.63, 329.63, 392.0], // C: C3, C4, E4, G4
       [110.0, 220.0, 261.63, 329.63],   // Am: A2, A3, C4, E4
@@ -540,6 +971,12 @@ export async function createInstantDemoTrackAndAnalyze(
     }
 
     const result = await analyzeAudioBuffer(audioBuffer, onProgress);
+    // Attach realistic Vietnamese demo lyrics to the synthetic demo result
+    const demoFallback = createFallbackDemoResult(result.detectedKey, result.detectedBpm);
+    result.lyricLines = demoFallback.lyricLines;
+    result.segments.forEach((seg, idx) => {
+      seg.lyricSnippet = demoFallback.segments[idx]?.lyricSnippet;
+    });
     await audioCtx.close();
     return result;
   } catch {
@@ -548,17 +985,78 @@ export async function createInstantDemoTrackAndAnalyze(
 }
 
 /**
- * Creates deterministic fallback song analysis result for tests / error recovery
+ * Creates deterministic fallback song analysis result with rich 3-layer notes and Vietnamese lyrics
  */
 export function createFallbackDemoResult(key = 'C', bpm = 85): SongAnalysisResult {
-  const segments: DetectedChordSegment[] = [
-    { startTime: 0.0, endTime: 1.75, chordSymbol: 'C', romanDegree: 'I', confidence: 94 },
-    { startTime: 1.75, endTime: 3.5, chordSymbol: 'Am', romanDegree: 'vi', confidence: 91 },
-    { startTime: 3.5, endTime: 5.25, chordSymbol: 'F', romanDegree: 'IV', confidence: 89 },
-    { startTime: 5.25, endTime: 7.0, chordSymbol: 'G', romanDegree: 'V', confidence: 92 },
+  const rawDefs = [
+    {
+      startTime: 0.0,
+      endTime: 1.75,
+      chordSymbol: 'C',
+      romanDegree: 'I',
+      confidence: 94,
+      bassNote: 'C2',
+      leftHandNotes: ['C2', 'G2'],
+      rightHandNotes: ['E3', 'G3', 'C4', 'E4'],
+      arpeggioSequence: ['C2', 'G2', 'E3', 'G3', 'C4', 'E4'],
+      vocalMelodyNotes: ['E4', 'G4', 'E4'],
+      lyricSnippet: 'Chiều buông nắng trên phím đàn xưa',
+    },
+    {
+      startTime: 1.75,
+      endTime: 3.5,
+      chordSymbol: 'Am',
+      romanDegree: 'vi',
+      confidence: 91,
+      bassNote: 'A2',
+      leftHandNotes: ['A2', 'E3'],
+      rightHandNotes: ['C4', 'E4', 'G4', 'A4'],
+      arpeggioSequence: ['A2', 'E3', 'C4', 'E4', 'A4', 'E4'],
+      vocalMelodyNotes: ['C5', 'B4', 'A4'],
+      lyricSnippet: 'Từng câu hát ngân nga nhẹ rơi',
+    },
+    {
+      startTime: 3.5,
+      endTime: 5.25,
+      chordSymbol: 'F',
+      romanDegree: 'IV',
+      confidence: 89,
+      bassNote: 'F2',
+      leftHandNotes: ['F2', 'C3'],
+      rightHandNotes: ['A3', 'C4', 'F4', 'A4'],
+      arpeggioSequence: ['F2', 'C3', 'A3', 'C4', 'F4', 'C4'],
+      vocalMelodyNotes: ['A4', 'G4', 'F4'],
+      lyricSnippet: 'Vòng hòa thanh dẫn lối êm đềm',
+    },
+    {
+      startTime: 5.25,
+      endTime: 7.0,
+      chordSymbol: 'G',
+      romanDegree: 'V',
+      confidence: 92,
+      bassNote: 'G2',
+      leftHandNotes: ['G2', 'D3'],
+      rightHandNotes: ['B3', 'D4', 'G4', 'B4'],
+      arpeggioSequence: ['G2', 'D3', 'B3', 'D4', 'G4', 'D4'],
+      vocalMelodyNotes: ['G4', 'F4', 'D4'],
+      lyricSnippet: 'Để dư âm lắng sâu vào tim',
+    },
   ];
 
+  const segments: DetectedChordSegment[] = rawDefs.map((d) => ({
+    ...d,
+    noteEvents: d.arpeggioSequence.map((note, idx) => ({
+      note,
+      midi: Note.midi(note) || 60,
+      timeOffset: Number((d.startTime + idx * 0.25).toFixed(2)),
+      duration: 0.3,
+      layer: idx < 2 ? 'bass' : 'voicing',
+      velocity: idx === 0 ? 92 : 78,
+    })),
+  }));
+
   const accompaniments = generateAccompanimentOptions(['C', 'Am', 'F', 'G'], key);
+  const lyricLines = buildDefaultLyricLinesFromSegments(segments);
 
   return {
     detectedKey: key,
@@ -568,5 +1066,6 @@ export function createFallbackDemoResult(key = 'C', bpm = 85): SongAnalysisResul
     segments,
     rawFormula: 'C - Am - F - G',
     accompaniments,
+    lyricLines,
   };
 }

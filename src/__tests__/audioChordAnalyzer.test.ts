@@ -6,6 +6,7 @@ import {
   calculateRomanDegree,
   generateAccompanimentOptions,
   createFallbackDemoResult,
+  extractThreeLayerNotesFromPcm,
 } from '../core/audioChordAnalyzer';
 
 describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
@@ -19,7 +20,6 @@ describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
   });
 
   it('accurately identifies C Major and A Minor from synthetic chromagram vectors', () => {
-    // C Major template: C (0), E (4), G (7)
     const cMajorChroma = new Array(12).fill(0);
     cMajorChroma[0] = 1.0;
     cMajorChroma[4] = 0.8;
@@ -29,7 +29,6 @@ describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
     expect(matchC.symbol).toBe('C');
     expect(matchC.confidence).toBeGreaterThan(80);
 
-    // A Minor template: A (9), C (0), E (4)
     const aMinorChroma = new Array(12).fill(0);
     aMinorChroma[9] = 1.0;
     aMinorChroma[0] = 0.8;
@@ -41,28 +40,17 @@ describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
   });
 
   it('determines the global musical key from aggregate chroma distribution', () => {
-    // Synthetic C Major piece chroma: C, D, E, F, G, A, B energy
     const cMajorPieceChroma = [
-      1.0, // C
-      0.1, // C#
-      0.6, // D
-      0.1, // D#
-      0.8, // E
-      0.7, // F
-      0.1, // F#
-      0.9, // G
-      0.1, // G#
-      0.6, // A
-      0.1, // A#
-      0.5, // B
+      1.0, 0.1, 0.6, 0.1, 0.8, 0.7, 0.1, 0.9, 0.1, 0.6, 0.1, 0.5,
     ];
 
     const detectedKey = detectKeyFromChromaSum(cMajorPieceChroma);
     expect(detectedKey).toBe('C');
   });
 
-  it('correctly maps chord symbols to Roman numeral degrees', () => {
+  it('correctly maps chord symbols (including slash inversions) to Roman numeral degrees', () => {
     expect(calculateRomanDegree('C', 'C')).toBe('I');
+    expect(calculateRomanDegree('C/E', 'C')).toBe('I');
     expect(calculateRomanDegree('Dm', 'C')).toBe('ii');
     expect(calculateRomanDegree('F', 'C')).toBe('IV');
     expect(calculateRomanDegree('G', 'C')).toBe('V');
@@ -78,28 +66,54 @@ describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
 
     const [ballad, rnb, jazz] = options;
 
-    // Pop Ballad
     expect(ballad.id).toBe('pop-ballad');
     expect(ballad.chordSymbols[0]).toContain('add9');
     expect(ballad.titleVi).toContain('Ballad');
 
-    // R&B / Neo-Soul
     expect(rnb.id).toBe('rnb-neosoul');
     expect(rnb.chordSymbols.some((c) => c.includes('maj9') || c.includes('m11') || c.includes('m9'))).toBe(true);
     expect(rnb.titleVi).toContain('R&B');
 
-    // Jazz 2-5-1 Lounge
     expect(jazz.id).toBe('jazz-lounge');
     expect(jazz.chordSymbols.some((c) => c.includes('7') || c.includes('9'))).toBe(true);
     expect(jazz.titleVi).toContain('Jazz');
   });
 
-  it('provides a deterministic fallback demo result with 4 measure segments', () => {
+  it('extracts 3-layer notes (Bass, Right-Hand Arpeggio sequence, Vocal Melody, and Slash Inversion) from synthetic PCM', () => {
+    const sampleRate = 22050;
+    const durationSec = 1.2;
+    const numSamples = Math.floor(sampleRate * durationSec);
+    const pcm = new Float32Array(numSamples);
+
+    // Synthesize E2 Bass (82.41 Hz = MIDI 40) + C4 (261.63 Hz = MIDI 60) -> G4 (392.00 Hz = MIDI 67)
+    for (let i = 0; i < numSamples; i++) {
+      const t = i / sampleRate;
+      const bassE2 = Math.sin(2 * Math.PI * 82.41 * t) * 0.6;
+      const midNote =
+        i < numSamples / 2
+          ? Math.sin(2 * Math.PI * 261.63 * t) * 0.45 // C4 in first half
+          : Math.sin(2 * Math.PI * 392.0 * t) * 0.45; // G4 in second half
+      pcm[i] = bassE2 + midNote;
+    }
+
+    const layers = extractThreeLayerNotesFromPcm(pcm, sampleRate, 0, numSamples, 0, 'C');
+
+    expect(layers.bassNote).toBe('E2');
+    expect(layers.slashChordSymbol).toBe('C/E');
+    expect(layers.arpeggioSequence[0]).toBe('E2');
+    expect(layers.arpeggioSequence).toContain('C4');
+    expect(layers.arpeggioSequence).toContain('G4');
+    expect(layers.noteEvents.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('provides a deterministic fallback demo result with 3-layer notes and synced lyrics', () => {
     const demo = createFallbackDemoResult('C', 85);
     expect(demo.detectedKey).toBe('C');
     expect(demo.detectedBpm).toBe(85);
     expect(demo.segments).toHaveLength(4);
-    expect(demo.rawFormula).toBe('C - Am - F - G');
-    expect(demo.accompaniments).toHaveLength(3);
+    expect(demo.segments[0].bassNote).toBe('C2');
+    expect(demo.segments[0].arpeggioSequence.length).toBeGreaterThanOrEqual(4);
+    expect(demo.segments[0].vocalMelodyNotes.length).toBeGreaterThanOrEqual(1);
+    expect(demo.lyricLines).toHaveLength(4);
   });
 });
