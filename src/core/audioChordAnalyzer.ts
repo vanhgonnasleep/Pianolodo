@@ -33,8 +33,8 @@ export interface DetectedChordSegment {
   bassNote: string;             // Left-hand lowest bass root/inversion (e.g. "C2", "B1", "A2")
   leftHandNotes: string[];      // Left-hand shell/fifth notes (e.g. ["C2", "G2"])
   rightHandNotes: string[];     // Right-hand voicing cluster (e.g. ["E3", "G3", "B3", "D4"])
-  arpeggioSequence: string[];   // Time-ordered sequence of notes played in this bar (e.g. ["C2", "G2", "E3", "G3", "C4", "E4"])
-  vocalMelodyNotes: string[];   // Singer's vocal melody notes detected in this bar (e.g. ["E4", "G4", "A4"])
+  arpeggioSequence: string[];   // Time-ordered sequence of notes played in this bar
+  vocalMelodyNotes: string[];   // Singer's vocal melody notes detected in this bar
   noteEvents: DetectedNoteEvent[];
   lyricSnippet?: string;
 }
@@ -59,7 +59,26 @@ export interface SongAnalysisResult {
   rawFormula: string;
   accompaniments: AccompanimentOption[];
   lyricLines: LyricLineSegment[];
-  audioWavBase64?: string; // Compact 16kHz mono WAV base64 for Gemini Multimodal Audio analysis
+  audioWavBase64?: string;      // Compact WAV base64 (up to 6 mins) for Gemini Multimodal Audio
+  capturedAudioBlob?: Blob;     // Playable full-length WAV Blob from Live Tab / Mic session
+}
+
+export interface ContinuousCaptureCallbacks {
+  onStreamReady?: (stream: MediaStream) => void;
+  onElapsedTick?: (elapsedSeconds: number) => void;
+  onLiveSegment?: (
+    segment: DetectedChordSegment,
+    allSegmentsSoFar: DetectedChordSegment[],
+    runningKey: string
+  ) => void;
+  onAutoEnded?: (finalResult: SongAnalysisResult) => void;
+}
+
+export interface ContinuousCaptureSession {
+  /** Stops capturing immediately and returns the finalized full-song SongAnalysisResult */
+  stopAndFinalize: () => Promise<SongAnalysisResult>;
+  /** Cancels and discards capture */
+  cancel: () => void;
 }
 
 export const PITCH_CLASSES = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'];
@@ -209,7 +228,8 @@ export function generateAccompanimentOptions(
   keyRoot: string
 ): AccompanimentOption[] {
   const cleanKey = keyRoot.replace('m', '');
-  const chords = rawChords.length > 0 ? rawChords : ['C', 'Am', 'F', 'G'];
+  // Cap core progression formula preview to up to 16 distinct chords so Studio input stays crisp
+  const chords = (rawChords.length > 0 ? rawChords : ['C', 'Am', 'F', 'G']).slice(0, 16);
 
   const balladChords = chords.map((c, i) => {
     const base = c.split('/')[0];
@@ -276,9 +296,6 @@ export function generateAccompanimentOptions(
   ];
 }
 
-/**
- * Computes Goertzel magnitude for a specific MIDI note in a sample slice
- */
 function computeMidiEnergy(
   channelData: Float32Array,
   sampleRate: number,
@@ -304,9 +321,6 @@ function computeMidiEnergy(
   return Math.max(0, Math.sqrt(Math.max(0, power))) / N;
 }
 
-/**
- * Extracts 12-bin Chromagram from audio PCM channel data using Goertzel frequency bank
- */
 export function extractChromagramFromPcm(
   channelData: Float32Array,
   sampleRate: number,
@@ -334,9 +348,9 @@ export function extractChromagramFromPcm(
 
 /**
  * Multi-band 3-Layer Note Extractor ("Ca sĩ / người đệm đã đánh nốt gì, nốt gì"):
- * 1. Left Hand Bass (MIDI 36..52 / C2..E3)
- * 2. Right Hand Voicing & Sub-frame Arpeggio Roll (MIDI 53..76 / F3..E5)
- * 3. Vocal Melody Pitch Contour (MIDI 60..81 / C4..A5)
+ * 1. Left Hand Bass (MIDI 36..51 / C2..Eb3)
+ * 2. Right Hand Voicing & Sub-frame Arpeggio Roll (MIDI 52..74 / E3..D5)
+ * 3. Vocal Melody Pitch Contour (MIDI 62..79 / D4..G5)
  */
 export function extractThreeLayerNotesFromPcm(
   channelData: Float32Array,
@@ -361,14 +375,11 @@ export function extractThreeLayerNotesFromPcm(
     return buildDeterministicNotesForChord(fallbackChordSymbol, windowStartTime);
   }
 
-  // 1. Scan Bass Range (MIDI 36 = C2 to MIDI 51 = Eb3)
   let bestBassMidi = 36;
   let maxBassEnergy = -1;
-  const bassEnergies: Array<{ midi: number; energy: number }> = [];
 
   for (let midi = 36; midi <= 51; midi++) {
     const energy = computeMidiEnergy(channelData, sampleRate, startSample, endSample, midi);
-    bassEnergies.push({ midi, energy });
     if (energy > maxBassEnergy) {
       maxBassEnergy = energy;
       bestBassMidi = midi;
@@ -383,7 +394,6 @@ export function extractThreeLayerNotesFromPcm(
   const fifthMidi = bestBassMidi + 7 <= 55 ? bestBassMidi + 7 : bestBassMidi;
   const leftHandNotes = Array.from(new Set([bassNote, midiToNoteName(fifthMidi)]));
 
-  // 2. Scan Sub-Frames (6 sub-slices per window) to capture time-ordered Arpeggio / Note Roll
   const numSlices = 6;
   const sliceLen = Math.max(64, Math.floor(totalSamples / numSlices));
   const arpeggioSequence: string[] = [bassNote];
@@ -406,10 +416,9 @@ export function extractThreeLayerNotesFromPcm(
     const sEnd = Math.min(endSample, sStart + sliceLen);
     if (sEnd - sStart <= 32) continue;
 
-    const sliceTime = windowStartTime + ((s * sliceLen) / sampleRate);
+    const sliceTime = windowStartTime + (s * sliceLen) / sampleRate;
     const sliceDur = sliceLen / sampleRate;
 
-    // Scan Mid-Range Right-Hand Voicing (MIDI 52 = E3 to MIDI 74 = D5)
     let bestMidMidi = 60;
     let bestMidEnergy = -1;
     for (let midi = 52; midi <= 74; midi++) {
@@ -436,7 +445,6 @@ export function extractThreeLayerNotesFromPcm(
       });
     }
 
-    // Scan Upper Vocal / Lead Melody Range (MIDI 62 = D4 to MIDI 79 = G5)
     if (s % 2 === 0) {
       let bestVocalMidi = 67;
       let bestVocalEnergy = -1;
@@ -464,7 +472,6 @@ export function extractThreeLayerNotesFromPcm(
     }
   }
 
-  // Sort right-hand voicing notes by energy & pitch
   const sortedRightMidis = Array.from(voicingMidiCounts.entries())
     .sort((a, b) => b[1] - a[1])
     .slice(0, 4)
@@ -480,7 +487,6 @@ export function extractThreeLayerNotesFromPcm(
     vocalMelodyNotes.push(rightHandNotes[rightHandNotes.length - 1] || 'E4');
   }
 
-  // Check if Bass Note forms a Slash Chord inversion (e.g. C chord with E2 bass -> C/E)
   const chordTonic = Chord.get(fallbackChordSymbol).tonic || fallbackChordSymbol.replace(/[^A-G#b]/g, '') || 'C';
   const bassPc = bassNote.replace(/[0-9-]/g, '');
   const chordPitchClasses = Chord.get(fallbackChordSymbol).notes;
@@ -500,9 +506,6 @@ export function extractThreeLayerNotesFromPcm(
   };
 }
 
-/**
- * Builds musical 3-layer notes (LH Bass, RH Voicing, Arpeggio pattern, Vocal Melody) for a given chord symbol
- */
 export function buildDeterministicNotesForChord(
   chordSymbol: string,
   windowStartTime = 0
@@ -525,7 +528,10 @@ export function buildDeterministicNotesForChord(
   const fifthPc = Note.transpose(bassPc, '5P') || 'G';
   const leftHandNotes = [bassNote, `${fifthPc}2`];
 
-  const chordNotes = parsed.notes.length >= 3 ? parsed.notes : [root, Note.transpose(root, '3M'), Note.transpose(root, '5P')];
+  const chordNotes =
+    parsed.notes.length >= 3
+      ? parsed.notes
+      : [root, Note.transpose(root, '3M'), Note.transpose(root, '5P')];
   const rightHandNotes = chordNotes.slice(0, 4).map((n, idx) => `${n}${idx === 0 ? 3 : 4}`);
   const arpeggioSequence = [bassNote, `${fifthPc}2`, ...rightHandNotes, rightHandNotes[1] || rightHandNotes[0]];
   const vocalMelodyNotes = [
@@ -554,13 +560,14 @@ export function buildDeterministicNotesForChord(
 }
 
 /**
- * Encodes an AudioBuffer (first 25 seconds max) into a compact 16kHz Mono 16-bit PCM WAV Base64 string
- * for sending directly to Gemini 2.5 Flash Multimodal Audio API.
+ * Encodes Float32 PCM samples into a RIFF WAV ArrayBuffer
  */
-export function encodeAudioBufferToWavBase64(audioBuffer: AudioBuffer, maxSeconds = 24): string {
-  const srcRate = audioBuffer.sampleRate;
-  const targetRate = 16000;
-  const srcData = audioBuffer.getChannelData(0);
+export function encodePcmToWavBuffer(
+  srcData: Float32Array,
+  srcRate: number,
+  targetRate = 16000,
+  maxSeconds = 600
+): ArrayBuffer {
   const maxSrcSamples = Math.min(srcData.length, Math.floor(maxSeconds * srcRate));
   const ratio = srcRate / targetRate;
   const numSamples = Math.max(1, Math.floor(maxSrcSamples / ratio));
@@ -579,8 +586,8 @@ export function encodeAudioBufferToWavBase64(audioBuffer: AudioBuffer, maxSecond
   writeStr(8, 'WAVE');
   writeStr(12, 'fmt ');
   view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true); // PCM
-  view.setUint16(22, 1, true); // Mono
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
   view.setUint32(24, targetRate, true);
   view.setUint32(28, targetRate * 2, true);
   view.setUint16(32, 2, true);
@@ -596,17 +603,29 @@ export function encodeAudioBufferToWavBase64(audioBuffer: AudioBuffer, maxSecond
     offset += 2;
   }
 
-  const bytes = new Uint8Array(buffer);
-  let binary = '';
-  for (let i = 0; i < bytes.byteLength; i++) {
-    binary += String.fromCharCode(bytes[i]);
-  }
-  return typeof btoa === 'function' ? btoa(binary) : '';
+  return buffer;
 }
 
 /**
- * Default synced lyrics generator for initial segments before custom/AI lyrics override
+ * Encodes an AudioBuffer (up to 6 minutes / 360s full song!) into a compact WAV Base64 string
+ * using adaptive sample rate (12kHz for <90s, 8kHz for 90s–360s) so Gemini 2.5 Flash Multimodal
+ * can listen to the ENTIRE full-length performance within inline payload limits.
  */
+export function encodeAudioBufferToWavBase64(audioBuffer: AudioBuffer, maxSeconds = 360): string {
+  const srcData = audioBuffer.getChannelData(0);
+  const adaptiveRate = audioBuffer.duration > 90 ? 8000 : 12000;
+  const wavArrayBuffer = encodePcmToWavBuffer(srcData, audioBuffer.sampleRate, adaptiveRate, maxSeconds);
+
+  const bytes = new Uint8Array(wavArrayBuffer);
+  const chunkSize = 0x8000;
+  const chunks: string[] = [];
+  for (let i = 0; i < bytes.byteLength; i += chunkSize) {
+    const sub = bytes.subarray(i, Math.min(bytes.byteLength, i + chunkSize));
+    chunks.push(String.fromCharCode(...sub));
+  }
+  return typeof btoa === 'function' ? btoa(chunks.join('')) : '';
+}
+
 function buildDefaultLyricLinesFromSegments(segments: DetectedChordSegment[]): LyricLineSegment[] {
   const defaultPhrasesVi = [
     'Đoạn mở đầu giai điệu ngân vang...',
@@ -643,7 +662,48 @@ function buildDefaultLyricLinesFromSegments(segments: DetectedChordSegment[]): L
 }
 
 /**
- * Analyzes decoded Web Audio Buffer and produces timestamped chord timeline + 3-layer notes + accompaniment options
+ * Analyzes a single window of PCM samples into a DetectedChordSegment + 12-bin chroma
+ */
+export function analyzeSinglePcmWindow(
+  channelData: Float32Array,
+  sampleRate: number,
+  startSample: number,
+  windowSamples: number,
+  startTimeSec: number,
+  endTimeSec: number,
+  runningKey = 'C'
+): { segment: DetectedChordSegment; chroma: number[] } {
+  const chroma = extractChromagramFromPcm(channelData, sampleRate, startSample, windowSamples);
+  const match = matchChromaToChord(chroma);
+  const layerNotes = extractThreeLayerNotesFromPcm(
+    channelData,
+    sampleRate,
+    startSample,
+    windowSamples,
+    startTimeSec,
+    match.symbol
+  );
+  const finalSymbol = layerNotes.slashChordSymbol || match.symbol;
+
+  const segment: DetectedChordSegment = {
+    startTime: Number(startTimeSec.toFixed(2)),
+    endTime: Number(endTimeSec.toFixed(2)),
+    chordSymbol: finalSymbol,
+    romanDegree: calculateRomanDegree(finalSymbol, runningKey),
+    confidence: match.confidence,
+    bassNote: layerNotes.bassNote,
+    leftHandNotes: layerNotes.leftHandNotes,
+    rightHandNotes: layerNotes.rightHandNotes,
+    arpeggioSequence: layerNotes.arpeggioSequence,
+    vocalMelodyNotes: layerNotes.vocalMelodyNotes,
+    noteEvents: layerNotes.noteEvents,
+  };
+
+  return { segment, chroma };
+}
+
+/**
+ * Analyzes full-length AudioBuffer (whether 7 seconds or 15 minutes!) with non-blocking UI yielding
  */
 export async function analyzeAudioBuffer(
   audioBuffer: AudioBuffer,
@@ -653,51 +713,45 @@ export async function analyzeAudioBuffer(
   const duration = audioBuffer.duration;
   const channelData = audioBuffer.getChannelData(0);
 
-  const windowSec = Math.max(1.5, Math.min(2.5, duration / 4));
-  const windowSamples = Math.floor(windowSec * sampleRate);
-  const totalWindows = Math.max(1, Math.floor(channelData.length / windowSamples));
+  // Use crisp ~2.0s measure windows for full songs (or duration/4 for very short <7s clips)
+  const windowSec = duration < 8 ? Math.max(1.2, duration / 4) : 2.0;
+  const windowSamples = Math.max(512, Math.floor(windowSec * sampleRate));
+  const totalWindows = Math.max(1, Math.ceil(channelData.length / windowSamples));
 
   const segments: DetectedChordSegment[] = [];
   const fullChromaSum = new Array(12).fill(0);
 
   for (let w = 0; w < totalWindows; w++) {
     const startSample = w * windowSamples;
-    const startTime = startSample / sampleRate;
-    const endTime = Math.min(duration, (startSample + windowSamples) / sampleRate);
+    const actualLen = Math.min(windowSamples, channelData.length - startSample);
+    if (actualLen < sampleRate * 0.35 && segments.length > 0) break;
 
-    const chroma = extractChromagramFromPcm(channelData, sampleRate, startSample, windowSamples);
+    const startTime = startSample / sampleRate;
+    const endTime = Math.min(duration, (startSample + actualLen) / sampleRate);
+
+    const { segment, chroma } = analyzeSinglePcmWindow(
+      channelData,
+      sampleRate,
+      startSample,
+      actualLen,
+      startTime,
+      endTime,
+      'C'
+    );
+
     for (let i = 0; i < 12; i++) {
       fullChromaSum[i] += chroma[i];
     }
 
-    const match = matchChromaToChord(chroma);
-    const layerNotes = extractThreeLayerNotesFromPcm(
-      channelData,
-      sampleRate,
-      startSample,
-      windowSamples,
-      startTime,
-      match.symbol
-    );
-
-    const finalSymbol = layerNotes.slashChordSymbol || match.symbol;
-
-    segments.push({
-      startTime: Number(startTime.toFixed(2)),
-      endTime: Number(endTime.toFixed(2)),
-      chordSymbol: finalSymbol,
-      romanDegree: 'I',
-      confidence: match.confidence,
-      bassNote: layerNotes.bassNote,
-      leftHandNotes: layerNotes.leftHandNotes,
-      rightHandNotes: layerNotes.rightHandNotes,
-      arpeggioSequence: layerNotes.arpeggioSequence,
-      vocalMelodyNotes: layerNotes.vocalMelodyNotes,
-      noteEvents: layerNotes.noteEvents,
-    });
+    segments.push(segment);
 
     if (onProgress) {
-      onProgress(Math.round(((w + 1) / totalWindows) * 90));
+      onProgress(Math.min(95, Math.round(((w + 1) / totalWindows) * 92)));
+    }
+
+    // Yield to browser UI every 12 windows so 5–15 minute videos never freeze the main thread
+    if (w > 0 && w % 12 === 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     }
   }
 
@@ -724,7 +778,7 @@ export async function analyzeAudioBuffer(
 
   let audioWavBase64: string | undefined;
   try {
-    audioWavBase64 = encodeAudioBufferToWavBase64(audioBuffer, 24);
+    audioWavBase64 = encodeAudioBufferToWavBase64(audioBuffer, 360);
   } catch {
     audioWavBase64 = undefined;
   }
@@ -737,7 +791,7 @@ export async function analyzeAudioBuffer(
     detectedKey,
     detectedBpm: estimatedBpm,
     confidence: avgConfidence,
-    duration,
+    duration: Number(duration.toFixed(2)),
     segments,
     rawFormula,
     accompaniments,
@@ -747,7 +801,198 @@ export async function analyzeAudioBuffer(
 }
 
 /**
- * Analyzes audio or video file (.MP4, .MOV, .WEBM, .MP3, .WAV, .M4A)
+ * Concatenates expandable Float32Array chunks recorded over arbitrary minutes into a single Float32Array
+ */
+export function mergePcmChunks(chunks: Float32Array[], totalSamples: number): Float32Array {
+  const merged = new Float32Array(Math.max(1024, totalSamples));
+  let offset = 0;
+  for (const chunk of chunks) {
+    const copyLen = Math.min(chunk.length, merged.length - offset);
+    if (copyLen <= 0) break;
+    merged.set(chunk.subarray(0, copyLen), offset);
+    offset += copyLen;
+  }
+  return merged;
+}
+
+/**
+ * Starts an UNLIMITED continuous Live Audio Capture session (from Facebook/YouTube Tab OR Microphone).
+ * Streams real-time chord & 3-layer note detections every 2.0 seconds while listening,
+ * and finalizes the entire full-length recording when stopAndFinalize() is called!
+ */
+export async function startContinuousStreamSession(
+  mode: 'tab' | 'mic',
+  callbacks: ContinuousCaptureCallbacks = {}
+): Promise<ContinuousCaptureSession> {
+  if (typeof navigator === 'undefined' || !navigator.mediaDevices) {
+    throw new Error('MEDIA_DEVICES_UNSUPPORTED');
+  }
+
+  const stream =
+    mode === 'tab'
+      ? await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true })
+      : await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  if (callbacks.onStreamReady) {
+    callbacks.onStreamReady(stream);
+  }
+
+  const audioTracks = stream.getAudioTracks();
+  if (audioTracks.length === 0) {
+    stream.getTracks().forEach((t) => t.stop());
+    throw new Error('NO_TAB_AUDIO_TRACK');
+  }
+
+  const AudioCtx =
+    window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  // 16kHz sample rate keeps memory tiny (~1.9MB/minute) while covering full piano & vocal spectrum up to 8000Hz!
+  const audioCtx = new AudioCtx({ sampleRate: 16000 });
+  const sampleRate = audioCtx.sampleRate;
+  const audioOnlyStream = new MediaStream(audioTracks);
+  const source = audioCtx.createMediaStreamSource(audioOnlyStream);
+
+  const recordedChunks: Float32Array[] = [];
+  let totalSamples = 0;
+
+  // Rolling 2-second live window accumulator for real-time chord & note radar
+  const windowSec = 2.0;
+  const windowTargetSamples = Math.floor(windowSec * sampleRate);
+  let pendingWindowSamples = new Float32Array(windowTargetSamples);
+  let pendingWriteIdx = 0;
+  let completedWindows = 0;
+  const liveSegments: DetectedChordSegment[] = [];
+  const runningChromaSum = new Array(12).fill(0);
+  let isStopped = false;
+
+  const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+  processor.onaudioprocess = (e) => {
+    if (isStopped) return;
+    const input = e.inputBuffer.getChannelData(0);
+    const copy = new Float32Array(input.length);
+    copy.set(input);
+    recordedChunks.push(copy);
+    totalSamples += copy.length;
+
+    // Feed into real-time 2.0s live analyzer window
+    let readIdx = 0;
+    while (readIdx < copy.length) {
+      const spaceLeft = windowTargetSamples - pendingWriteIdx;
+      const toCopy = Math.min(spaceLeft, copy.length - readIdx);
+      pendingWindowSamples.set(copy.subarray(readIdx, readIdx + toCopy), pendingWriteIdx);
+      pendingWriteIdx += toCopy;
+      readIdx += toCopy;
+
+      if (pendingWriteIdx >= windowTargetSamples) {
+        const startSec = completedWindows * windowSec;
+        const endSec = (completedWindows + 1) * windowSec;
+        const prelimChroma = extractChromagramFromPcm(
+          pendingWindowSamples,
+          sampleRate,
+          0,
+          windowTargetSamples
+        );
+        for (let i = 0; i < 12; i++) {
+          runningChromaSum[i] += prelimChroma[i];
+        }
+        const runningKey = detectKeyFromChromaSum(runningChromaSum);
+
+        const { segment } = analyzeSinglePcmWindow(
+          pendingWindowSamples,
+          sampleRate,
+          0,
+          windowTargetSamples,
+          startSec,
+          endSec,
+          runningKey
+        );
+
+        liveSegments.push(segment);
+        completedWindows += 1;
+        pendingWriteIdx = 0;
+        pendingWindowSamples = new Float32Array(windowTargetSamples);
+
+        if (callbacks.onLiveSegment) {
+          callbacks.onLiveSegment(segment, [...liveSegments], runningKey);
+        }
+      }
+    }
+  };
+
+  // Connect processor via a silent GainNode (0 gain) so microphone/tab audio never causes speaker feedback echo!
+  const silentGain = audioCtx.createGain();
+  silentGain.gain.value = 0;
+  source.connect(processor);
+  processor.connect(silentGain);
+  silentGain.connect(audioCtx.destination);
+
+  let elapsedSeconds = 0;
+  const tickTimer = setInterval(() => {
+    if (!isStopped) {
+      elapsedSeconds += 1;
+      if (callbacks.onElapsedTick) {
+        callbacks.onElapsedTick(elapsedSeconds);
+      }
+    }
+  }, 1000);
+
+  const cleanupResources = async () => {
+    if (isStopped) return;
+    isStopped = true;
+    clearInterval(tickTimer);
+    try {
+      processor.disconnect();
+      source.disconnect();
+      silentGain.disconnect();
+    } catch {
+      // ignore
+    }
+    stream.getTracks().forEach((t) => t.stop());
+  };
+
+  const stopAndFinalize = async (): Promise<SongAnalysisResult> => {
+    await cleanupResources();
+
+    const mergedPcm = mergePcmChunks(recordedChunks, totalSamples);
+    const finalAudioBuffer = audioCtx.createBuffer(1, mergedPcm.length, sampleRate);
+    finalAudioBuffer.getChannelData(0).set(mergedPcm);
+
+    const wavBuffer = encodePcmToWavBuffer(mergedPcm, sampleRate, 16000, 900);
+    const capturedAudioBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+    const finalResult = await analyzeAudioBuffer(finalAudioBuffer);
+    finalResult.capturedAudioBlob = capturedAudioBlob;
+
+    try {
+      await audioCtx.close();
+    } catch {
+      // ignore
+    }
+
+    return finalResult;
+  };
+
+  // If user clicks browser's native "Stop sharing" button on the Facebook tab, auto-finalize!
+  audioTracks[0].onended = () => {
+    if (!isStopped) {
+      stopAndFinalize()
+        .then((res) => {
+          if (callbacks.onAutoEnded) callbacks.onAutoEnded(res);
+        })
+        .catch(() => {});
+    }
+  };
+
+  return {
+    stopAndFinalize,
+    cancel: () => {
+      cleanupResources();
+      audioCtx.close().catch(() => {});
+    },
+  };
+}
+
+/**
+ * Analyzes full-length audio or video file (.MP4, .MOV, .WEBM, .MP3, .WAV, .M4A) of any duration
  */
 export async function analyzeAudioFile(
   fileOrBuffer: File | ArrayBuffer,
@@ -770,7 +1015,8 @@ export async function analyzeAudioFile(
   }
 
   try {
-    const audioCtx = new AudioCtx({ sampleRate: 22050 });
+    // Decode at 16000Hz so even 10-minute HD .MP4 videos decode fast with low RAM footprint
+    const audioCtx = new AudioCtx({ sampleRate: 16000 });
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     const result = await analyzeAudioBuffer(audioBuffer, onProgress);
     await audioCtx.close();
@@ -781,58 +1027,15 @@ export async function analyzeAudioFile(
 }
 
 /**
- * Captures live digital audio & video directly from a Facebook / YouTube browser tab via getDisplayMedia
+ * Legacy helper preserved for backwards compatibility
  */
 export async function captureTabAudioAndAnalyze(
-  durationSeconds = 8,
+  durationSeconds = 15,
   onCountdown?: (remainingSec: number) => void,
   onProgress?: (pct: number) => void,
   onStreamReady?: (stream: MediaStream) => void
 ): Promise<SongAnalysisResult> {
-  if (
-    typeof navigator === 'undefined' ||
-    !navigator.mediaDevices ||
-    typeof navigator.mediaDevices.getDisplayMedia !== 'function'
-  ) {
-    return createFallbackDemoResult('C', 85);
-  }
-
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: true,
-  });
-
-  if (onStreamReady) {
-    onStreamReady(stream);
-  }
-
-  const audioTracks = stream.getAudioTracks();
-  if (audioTracks.length === 0) {
-    stream.getTracks().forEach((t) => t.stop());
-    throw new Error('NO_TAB_AUDIO_TRACK');
-  }
-
-  const AudioCtx =
-    window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-  const audioCtx = new AudioCtx({ sampleRate: 22050 });
-  const audioOnlyStream = new MediaStream(audioTracks);
-  const source = audioCtx.createMediaStreamSource(audioOnlyStream);
-
-  const bufferLength = Math.floor(durationSeconds * audioCtx.sampleRate);
-  const channelBuffer = new Float32Array(bufferLength);
-  let writeIndex = 0;
-
-  const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-  processor.onaudioprocess = (e) => {
-    const inputData = e.inputBuffer.getChannelData(0);
-    for (let i = 0; i < inputData.length && writeIndex < bufferLength; i++) {
-      channelBuffer[writeIndex++] = inputData[i];
-    }
-  };
-
-  source.connect(processor);
-  processor.connect(audioCtx.destination);
-
+  const session = await startContinuousStreamSession('tab', { onStreamReady });
   let remaining = durationSeconds;
   if (onCountdown) onCountdown(remaining);
   await new Promise<void>((resolve) => {
@@ -845,57 +1048,17 @@ export async function captureTabAudioAndAnalyze(
       }
     }, 1000);
   });
-
-  processor.disconnect();
-  source.disconnect();
-  stream.getTracks().forEach((track) => track.stop());
-
-  const safeLength = Math.max(1024, writeIndex);
-  const finalBuffer = audioCtx.createBuffer(1, safeLength, audioCtx.sampleRate);
-  finalBuffer.copyToChannel(channelBuffer.subarray(0, safeLength), 0);
-
-  const result = await analyzeAudioBuffer(finalBuffer, onProgress);
-  await audioCtx.close();
-  return result;
+  if (onProgress) onProgress(85);
+  return session.stopAndFinalize();
 }
 
-/**
- * Records live audio from user's microphone with simulated fallback if permission denied
- */
 export async function recordMicrophoneAndAnalyze(
-  durationSeconds = 6,
+  durationSeconds = 10,
   onCountdown?: (remainingSec: number) => void,
   onProgress?: (pct: number) => void
 ): Promise<SongAnalysisResult> {
-  if (
-    typeof navigator === 'undefined' ||
-    !navigator.mediaDevices ||
-    typeof navigator.mediaDevices.getUserMedia !== 'function'
-  ) {
-    return createFallbackDemoResult('C', 80);
-  }
-
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    const audioCtx = new AudioCtx({ sampleRate: 22050 });
-    const source = audioCtx.createMediaStreamSource(stream);
-
-    const bufferLength = Math.floor(durationSeconds * audioCtx.sampleRate);
-    const channelBuffer = new Float32Array(bufferLength);
-    let writeIndex = 0;
-
-    const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-    processor.onaudioprocess = (e) => {
-      const inputData = e.inputBuffer.getChannelData(0);
-      for (let i = 0; i < inputData.length && writeIndex < bufferLength; i++) {
-        channelBuffer[writeIndex++] = inputData[i];
-      }
-    };
-
-    source.connect(processor);
-    processor.connect(audioCtx.destination);
-
+    const session = await startContinuousStreamSession('mic');
     let remaining = durationSeconds;
     if (onCountdown) onCountdown(remaining);
     await new Promise<void>((resolve) => {
@@ -908,25 +1071,13 @@ export async function recordMicrophoneAndAnalyze(
         }
       }, 1000);
     });
-
-    processor.disconnect();
-    source.disconnect();
-    stream.getTracks().forEach((track) => track.stop());
-
-    const finalBuffer = audioCtx.createBuffer(1, Math.max(1024, writeIndex), audioCtx.sampleRate);
-    finalBuffer.copyToChannel(channelBuffer.subarray(0, Math.max(1024, writeIndex)), 0);
-
-    const result = await analyzeAudioBuffer(finalBuffer, onProgress);
-    await audioCtx.close();
-    return result;
+    if (onProgress) onProgress(85);
+    return session.stopAndFinalize();
   } catch {
     return createFallbackDemoResult('C', 80);
   }
 }
 
-/**
- * Generates an instant synthetic demo track (4 chords: C - Am - F - G) using Web Audio synth
- */
 export async function createInstantDemoTrackAndAnalyze(
   onProgress?: (pct: number) => void
 ): Promise<SongAnalysisResult> {
@@ -940,17 +1091,17 @@ export async function createInstantDemoTrackAndAnalyze(
   }
 
   try {
-    const audioCtx = new AudioCtx({ sampleRate: 22050 });
+    const audioCtx = new AudioCtx({ sampleRate: 16000 });
     const sampleRate = audioCtx.sampleRate;
     const duration = 7.0;
     const audioBuffer = audioCtx.createBuffer(1, Math.floor(duration * sampleRate), sampleRate);
     const data = audioBuffer.getChannelData(0);
 
     const chordFrequencies = [
-      [130.81, 261.63, 329.63, 392.0], // C: C3, C4, E4, G4
-      [110.0, 220.0, 261.63, 329.63],   // Am: A2, A3, C4, E4
-      [87.31, 174.61, 220.0, 261.63],   // F: F2, F3, A3, C4
-      [98.0, 196.0, 246.94, 293.66],    // G: G2, G3, B3, D4
+      [130.81, 261.63, 329.63, 392.0],
+      [110.0, 220.0, 261.63, 329.63],
+      [87.31, 174.61, 220.0, 261.63],
+      [98.0, 196.0, 246.94, 293.66],
     ];
 
     const chordDuration = duration / 4;
@@ -971,7 +1122,6 @@ export async function createInstantDemoTrackAndAnalyze(
     }
 
     const result = await analyzeAudioBuffer(audioBuffer, onProgress);
-    // Attach realistic Vietnamese demo lyrics to the synthetic demo result
     const demoFallback = createFallbackDemoResult(result.detectedKey, result.detectedBpm);
     result.lyricLines = demoFallback.lyricLines;
     result.segments.forEach((seg, idx) => {
@@ -984,9 +1134,6 @@ export async function createInstantDemoTrackAndAnalyze(
   }
 }
 
-/**
- * Creates deterministic fallback song analysis result with rich 3-layer notes and Vietnamese lyrics
- */
 export function createFallbackDemoResult(key = 'C', bpm = 85): SongAnalysisResult {
   const rawDefs = [
     {

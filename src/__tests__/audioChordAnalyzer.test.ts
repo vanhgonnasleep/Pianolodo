@@ -7,6 +7,8 @@ import {
   generateAccompanimentOptions,
   createFallbackDemoResult,
   extractThreeLayerNotesFromPcm,
+  mergePcmChunks,
+  analyzeAudioBuffer,
 } from '../core/audioChordAnalyzer';
 
 describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
@@ -115,5 +117,35 @@ describe('Audio & Melody-to-Chord Analyzer DSP Engine', () => {
     expect(demo.segments[0].arpeggioSequence.length).toBeGreaterThanOrEqual(4);
     expect(demo.segments[0].vocalMelodyNotes.length).toBeGreaterThanOrEqual(1);
     expect(demo.lyricLines).toHaveLength(4);
+  });
+
+  it('merges unlimited streaming PCM chunks seamlessly and analyzes long multi-segment tracks', async () => {
+    const chunk1 = new Float32Array([0.1, 0.2, 0.3]);
+    const chunk2 = new Float32Array([0.4, 0.5]);
+    const merged = mergePcmChunks([chunk1, chunk2], 5);
+    expect(merged[0]).toBeCloseTo(0.1, 4);
+    expect(merged[4]).toBeCloseTo(0.5, 4);
+
+    // Simulate a 30-second track at 8000Hz -> should produce 15 distinct 2.0s measure segments (not capped at 4s/8s!)
+    const sampleRate = 8000;
+    const duration = 30.0;
+    const totalSamples = sampleRate * duration;
+    const pcm = new Float32Array(totalSamples);
+    for (let i = 0; i < totalSamples; i++) {
+      const t = i / sampleRate;
+      pcm[i] = Math.sin(2 * Math.PI * 130.81 * t) * 0.4 + Math.sin(2 * Math.PI * 261.63 * t) * 0.3;
+    }
+
+    const fakeAudioBuffer = {
+      sampleRate,
+      duration,
+      length: totalSamples,
+      numberOfChannels: 1,
+      getChannelData: () => pcm,
+    } as unknown as AudioBuffer;
+
+    const result = await analyzeAudioBuffer(fakeAudioBuffer);
+    expect(result.duration).toBe(30);
+    expect(result.segments).toHaveLength(15);
   });
 });

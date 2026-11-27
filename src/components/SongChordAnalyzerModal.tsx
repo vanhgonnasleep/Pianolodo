@@ -19,16 +19,17 @@ import {
   Wand2,
   AlertCircle,
   Gauge,
+  Radio,
 } from 'lucide-react';
 import { Note } from '@tonaljs/tonal';
 import { Language, VibeId } from '../types/harmony';
 import {
   SongAnalysisResult,
   DetectedChordSegment,
+  ContinuousCaptureSession,
   analyzeAudioFile,
-  recordMicrophoneAndAnalyze,
   createInstantDemoTrackAndAnalyze,
-  captureTabAudioAndAnalyze,
+  startContinuousStreamSession,
   midiToNoteName,
 } from '../core/audioChordAnalyzer';
 import {
@@ -51,10 +52,15 @@ interface SongChordAnalyzerModalProps {
 type InputTab = 'tab-capture' | 'upload' | 'mic' | 'demo';
 type ResultSubTab = 'notes-inspector' | 'lyrics-leadsheet' | 'reharm-options';
 
-// Visual 37-key Studio Inspector Keyboard (C2 = MIDI 36 to C5 = MIDI 72)
-const INSPECTOR_START_MIDI = 36;
-const INSPECTOR_END_MIDI = 72;
+const INSPECTOR_START_MIDI = 36; // C2
+const INSPECTOR_END_MIDI = 72;   // C5
 const BLACK_KEY_OFFSETS = new Set([1, 3, 6, 8, 10]);
+
+function formatClock(totalSeconds: number): string {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = Math.floor(totalSeconds % 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
 
 export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
   isOpen,
@@ -62,7 +68,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
   onApplyProgression,
   lang,
 }) => {
-  const [activeTab, setActiveTab] = useState<InputTab>('demo');
+  const [activeTab, setActiveTab] = useState<InputTab>('tab-capture');
   const [resultSubTab, setResultSubTab] = useState<ResultSubTab>('notes-inspector');
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [progressPct, setProgressPct] = useState<number>(0);
@@ -70,14 +76,17 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Video & Audio Media Player state
+  // Video & Audio Media Player state (supports both uploaded long videos AND captured Tab/Mic WAVs!)
   const [mediaObjectUrl, setMediaObjectUrl] = useState<string | null>(null);
   const [isVideoFile, setIsVideoFile] = useState<boolean>(false);
   const [playbackRate, setPlaybackRate] = useState<number>(1.0);
 
-  // Mic & Tab Capture state
-  const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [captureCountdown, setCaptureCountdown] = useState<number>(8);
+  // Continuous Unlimited Live Capture State (Tab & Mic)
+  const [isCapturingLive, setIsCapturingLive] = useState<boolean>(false);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const [liveSegments, setLiveSegments] = useState<DetectedChordSegment[]>([]);
+  const [liveRunningKey, setLiveRunningKey] = useState<string>('C');
+  const [liveSpeechPreview, setLiveSpeechPreview] = useState<string>('');
 
   // Playback & Active Segment Inspector state
   const [isPlayingAudition, setIsPlayingAudition] = useState<boolean>(false);
@@ -95,28 +104,50 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoPlayerRef = useRef<HTMLVideoElement>(null);
   const liveTabVideoRef = useRef<HTMLVideoElement>(null);
+  const activeSessionRef = useRef<ContinuousCaptureSession | null>(null);
+  const speechRecRef = useRef<{ stop: () => void } | null>(null);
+  const liveSpeechTextRef = useRef<string>('');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isOpen) {
-        onClose();
+        handleCloseModal();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  });
 
   useEffect(() => {
     return () => {
       if (mediaObjectUrl) {
         URL.revokeObjectURL(mediaObjectUrl);
       }
+      activeSessionRef.current?.cancel();
+      speechRecRef.current?.stop();
     };
   }, [mediaObjectUrl]);
 
   if (!isOpen) return null;
 
+  const handleCloseModal = () => {
+    pianoAudioEngine.stopPlayback();
+    activeSessionRef.current?.cancel();
+    activeSessionRef.current = null;
+    speechRecRef.current?.stop();
+    speechRecRef.current = null;
+    setIsCapturingLive(false);
+    onClose();
+  };
+
   const populateResult = (result: SongAnalysisResult, label: string) => {
+    // If the live session produced a playable WAV Blob, attach it to the Slow-Mo Media Player!
+    if (result.capturedAudioBlob && typeof URL.createObjectURL === 'function') {
+      if (mediaObjectUrl) URL.revokeObjectURL(mediaObjectUrl);
+      setIsVideoFile(false);
+      setMediaObjectUrl(URL.createObjectURL(result.capturedAudioBlob));
+    }
+
     setAnalysisResult(result);
     setSelectedFileName(label);
     setActiveSegmentIndex(0);
@@ -124,7 +155,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     setErrorMessage(null);
   };
 
-  // 1. Handle Video / Audio File Upload (.MP4, .MOV, .WEBM, .MP3, .WAV, .MID)
+  // 1. Handle Full-Length Video / Audio File Upload (.MP4, .MOV, .WEBM, .MP3, .WAV, .MID — any length!)
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -141,7 +172,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
 
     setSelectedFileName(file.name);
     setIsAnalyzing(true);
-    setProgressPct(10);
+    setProgressPct(5);
     setErrorMessage(null);
 
     try {
@@ -150,104 +181,127 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     } catch {
       setErrorMessage(
         lang === 'vi'
-          ? 'Không thể giải mã file này. Hãy thử định dạng .MP4, .MP3 hoặc .WAV.'
-          : 'Could not decode this media file. Please try .MP4, .MP3, or .WAV.'
+          ? 'Không thể giải mã file này. Hãy thử định dạng .MP4, .MOV, .WEBM, .MP3 hoặc .WAV.'
+          : 'Could not decode this media file. Please try .MP4, .MOV, .WEBM, .MP3, or .WAV.'
       );
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // 2. Handle Live Facebook / YouTube Tab Capture
-  const handleStartTabCapture = async () => {
-    setIsRecording(true);
-    setCaptureCountdown(8);
-    setIsAnalyzing(true);
-    setProgressPct(15);
+  // 2. Start UNLIMITED Continuous Live Stream (Facebook/YouTube Tab OR Microphone)
+  const handleStartContinuousCapture = async (mode: 'tab' | 'mic') => {
     setErrorMessage(null);
+    setAnalysisResult(null);
+    setLiveSegments([]);
+    setElapsedSeconds(0);
+    setLiveSpeechPreview('');
+    liveSpeechTextRef.current = '';
 
-    let liveSpeechText = '';
-    const speechController = startLiveSpeechRecognition(lang, (txt) => {
-      liveSpeechText = txt;
+    const speechCtrl = startLiveSpeechRecognition(lang, (txt) => {
+      liveSpeechTextRef.current = txt;
+      setLiveSpeechPreview(txt);
     });
+    speechRecRef.current = speechCtrl;
 
     try {
-      const result = await captureTabAudioAndAnalyze(
-        8,
-        (remaining) => setCaptureCountdown(remaining),
-        (pct) => setProgressPct(pct),
-        (stream) => {
-          if (liveTabVideoRef.current) {
+      const session = await startContinuousStreamSession(mode, {
+        onStreamReady: (stream) => {
+          if (mode === 'tab' && liveTabVideoRef.current) {
             liveTabVideoRef.current.srcObject = stream;
             liveTabVideoRef.current.play().catch(() => {});
           }
-        }
-      );
+        },
+        onElapsedTick: (sec) => {
+          setElapsedSeconds(sec);
+        },
+        onLiveSegment: (_seg, allSegs, runningKey) => {
+          setLiveSegments(allSegs);
+          setLiveRunningKey(runningKey);
+          setActiveSegmentIndex(allSegs.length - 1);
+        },
+        onAutoEnded: (finalRes) => {
+          // Triggered if user clicks Chrome's native "Stop sharing" bar
+          speechRecRef.current?.stop();
+          speechRecRef.current = null;
+          activeSessionRef.current = null;
+          setIsCapturingLive(false);
+          if (liveSpeechTextRef.current.trim()) {
+            finalRes.lyricLines = alignCustomLyricsToSegments(
+              liveSpeechTextRef.current,
+              finalRes.segments
+            );
+          }
+          populateResult(
+            finalRes,
+            lang === 'vi'
+              ? `Bản Thu Trực Tiếp (${formatClock(finalRes.duration)})`
+              : `Live Captured Track (${formatClock(finalRes.duration)})`
+          );
+        },
+      });
 
-      if (speechController) speechController.stop();
-      if (liveSpeechText.trim()) {
-        result.lyricLines = alignCustomLyricsToSegments(liveSpeechText, result.segments);
-      }
-
-      populateResult(
-        result,
-        lang === 'vi' ? 'Video Ca Sĩ Trên Tab Facebook (8s)' : 'Facebook Tab Live Capture (8s)'
-      );
+      activeSessionRef.current = session;
+      setIsCapturingLive(true);
     } catch (err) {
-      if (speechController) speechController.stop();
+      speechCtrl?.stop();
+      speechRecRef.current = null;
+      setIsCapturingLive(false);
       const msg = err instanceof Error ? err.message : '';
       if (msg === 'NO_TAB_AUDIO_TRACK') {
         setErrorMessage(
           lang === 'vi'
-            ? '⚠️ Bạn chưa tích ô "Also share tab audio / Chia sẻ âm thanh tab" khi chọn tab Facebook! Hãy bấm lại và tích chọn chia sẻ âm thanh ở góc dưới hộp thoại.'
+            ? '⚠️ Bạn chưa tích ô "Also share tab audio / Chia sẻ âm thanh tab" ở góc dưới khi chọn Tab Facebook! Hãy bấm lại và tích chọn chia sẻ âm thanh nhé.'
             : '⚠️ Please check "Also share tab audio" at the bottom of the browser tab picker dialog!'
         );
       } else {
         setErrorMessage(
           lang === 'vi'
-            ? 'Đã hủy chọn Tab hoặc trình duyệt không hỗ trợ bắt âm thanh Tab. Bạn có thể tải video .MP4 lên ở tab bên cạnh!'
-            : 'Tab capture cancelled or unsupported. You can also upload an .MP4 video file directly!'
+            ? 'Đã hủy hoặc trình duyệt chưa cấp quyền thu âm. Bạn cũng có thể kéo thả trực tiếp file video .MP4 dài bất kỳ ở tab bên cạnh!'
+            : 'Capture cancelled or permission denied. You can also upload any full-length .MP4 video file!'
         );
       }
-    } finally {
-      setIsRecording(false);
-      setIsAnalyzing(false);
     }
   };
 
-  // 3. Handle Live Microphone Recording + Live Web Speech Lyrics
-  const handleStartMic = async () => {
-    setIsRecording(true);
-    setCaptureCountdown(6);
-    setIsAnalyzing(true);
-    setProgressPct(15);
-    setErrorMessage(null);
+  // Stop & Finalize Unlimited Live Capture whenever user clicks Stop
+  const handleStopContinuousCapture = async () => {
+    const session = activeSessionRef.current;
+    if (!session) return;
 
-    let liveSpeechText = '';
-    const speechController = startLiveSpeechRecognition(lang, (txt) => {
-      liveSpeechText = txt;
-    });
+    speechRecRef.current?.stop();
+    speechRecRef.current = null;
+    setIsCapturingLive(false);
+    setIsAnalyzing(true);
+    setProgressPct(65);
 
     try {
-      const result = await recordMicrophoneAndAnalyze(
-        6,
-        (remaining) => setCaptureCountdown(remaining),
-        (pct) => setProgressPct(pct)
-      );
-      if (speechController) speechController.stop();
-      if (liveSpeechText.trim()) {
-        result.lyricLines = alignCustomLyricsToSegments(liveSpeechText, result.segments);
+      const finalRes = await session.stopAndFinalize();
+      activeSessionRef.current = null;
+      if (liveSpeechTextRef.current.trim()) {
+        finalRes.lyricLines = alignCustomLyricsToSegments(
+          liveSpeechTextRef.current,
+          finalRes.segments
+        );
       }
-      populateResult(result, lang === 'vi' ? 'Bản Thu Âm Micro (6s)' : 'Live Mic Recording (6s)');
+      populateResult(
+        finalRes,
+        lang === 'vi'
+          ? `Bản Thu Cả Bài (${formatClock(finalRes.duration)})`
+          : `Full Captured Song (${formatClock(finalRes.duration)})`
+      );
     } catch {
-      if (speechController) speechController.stop();
+      setErrorMessage(
+        lang === 'vi'
+          ? 'Có lỗi khi tổng hợp bản thu.'
+          : 'Failed to finalize captured session.'
+      );
     } finally {
-      setIsRecording(false);
       setIsAnalyzing(false);
     }
   };
 
-  // 4. Handle Instant Demo Generation
+  // 4. Instant Demo Generation
   const handleInstantDemo = async () => {
     setIsAnalyzing(true);
     setProgressPct(20);
@@ -268,7 +322,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     }
   };
 
-  // Play a single note on click
   const handlePlaySingleNote = (noteName: string) => {
     setHighlightedArpNote(noteName);
     pianoAudioEngine.playNote(noteName, '4n');
@@ -277,7 +330,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     }, 450);
   };
 
-  // Play the exact time-ordered Arpeggio / Note Roll of a segment ("Ca sĩ đã đánh nốt gì, nốt gì")
   const handlePlaySegmentNoteRoll = (seg: DetectedChordSegment, segIdx: number) => {
     setActiveSegmentIndex(segIdx);
     if (videoPlayerRef.current) {
@@ -301,7 +353,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     });
   };
 
-  // Play the singer's vocal melody notes in the selected segment
   const handlePlayVocalMelody = (seg: DetectedChordSegment) => {
     const stepMs = Math.round(320 / playbackRate);
     seg.vocalMelodyNotes.forEach((n, idx) => {
@@ -315,7 +366,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     });
   };
 
-  // Synchronize HTML5 Video playback time with active chord & 3-layer notes
   const handleVideoTimeUpdate = () => {
     const vid = videoPlayerRef.current;
     if (!vid || !analysisResult) return;
@@ -335,7 +385,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     }
   };
 
-  // Apply Manual / Edited Lyrics Sync
   const handleApplyCustomLyrics = () => {
     if (!analysisResult) return;
     const synced = alignCustomLyricsToSegments(customLyricsInput, analysisResult.segments);
@@ -346,15 +395,14 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     setShowLyricsEditor(false);
   };
 
-  // Trigger Gemini 2.5 Flash Multimodal Audio Transcription
   const handleGeminiAudioTranscribe = async () => {
     if (!analysisResult) return;
     if (!geminiApiKey.trim()) {
       setShowApiKeyBox(true);
       setErrorMessage(
         lang === 'vi'
-          ? 'Hãy nhập Gemini API Key miễn phí (từ Google AI Studio) để AI nghe trực tiếp giọng ca sĩ trong video!'
-          : 'Please enter a free Gemini API Key from Google AI Studio to enable AI audio transcription!'
+          ? 'Hãy nhập Gemini API Key miễn phí (từ Google AI Studio) để AI nghe toàn bộ bài hát và chép lời!'
+          : 'Please enter a free Gemini API Key from Google AI Studio to enable full-song AI audio transcription!'
       );
       return;
     }
@@ -376,7 +424,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
       const msg = err instanceof Error ? err.message : 'Error';
       setErrorMessage(
         lang === 'vi'
-          ? `Không thể gọi Gemini Audio API (${msg}). Bạn có thể dùng tính năng "Dán / Sửa Lời Tự Khớp Hợp Âm" ngay bên cạnh!`
+          ? `Không thể gọi Gemini Audio API (${msg}). Bạn có thể dùng nút "Dán / Sửa Lời Tự Khớp Hợp Âm" ngay bên cạnh!`
           : `Gemini Audio API failed (${msg}). You can use the instant offline Lyrics Auto-Sync editor!`
       );
     } finally {
@@ -384,7 +432,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
     }
   };
 
-  // Audition an Accompaniment Option
   const handleAudition = async (optionId: string, formula: string, keyRoot: string) => {
     if (isPlayingAudition && auditioningOptionId === optionId) {
       pianoAudioEngine.stopPlayback();
@@ -427,13 +474,14 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
       'jazz-lounge': 'jazz-bossa',
     };
     onApplyProgression(formula, keyRoot.replace('m', ''), vibeMap[optionId] || 'pop-ballad');
-    onClose();
+    handleCloseModal();
   };
 
+  // Active segment works seamlessly both DURING live capture (real-time radar!) and AFTER completion!
+  const displayedSegments = isCapturingLive ? liveSegments : analysisResult?.segments || [];
   const activeSeg: DetectedChordSegment | undefined =
-    analysisResult?.segments[activeSegmentIndex] || analysisResult?.segments[0];
+    displayedSegments[activeSegmentIndex] || displayedSegments[displayedSegments.length - 1];
 
-  // Build sets of active MIDI numbers for the Visual 3-Layer Piano Strip
   const activeBassMidis = new Set(
     (activeSeg?.leftHandNotes || []).map((n) => Note.midi(n)).filter((m): m is number => typeof m === 'number')
   );
@@ -469,26 +517,23 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
               <h2 className="text-base md:text-lg font-bold tracking-tight text-[#F8FAFC] flex flex-wrap items-center gap-2 font-serif">
                 <span>
                   {lang === 'vi'
-                    ? 'Phòng Thu Bóc Tách Video Ca Sĩ Hát: Hợp Âm • Từng Nốt Đàn • Lời Bài Hát'
-                    : 'Video & Singer Performance Analyzer: Chords • Exact Notes • Lyrics'}
+                    ? 'Phòng Thu Bóc Tách Video Dài & Live Tab: Hợp Âm • Từng Nốt • Lời Hát'
+                    : 'Full-Length Video & Live Tab Analyzer: Chords • Exact Notes • Lyrics'}
                 </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#38BDF8]/20 text-[#38BDF8] border border-[#38BDF8]/30 font-bold">
-                  3-Layer Note DSP + AI Lyrics
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/40 font-bold">
+                  Unlimited Duration • Live Radar
                 </span>
               </h2>
               <p className="text-xs text-[#CBD5E1]">
                 {lang === 'vi'
-                  ? 'Bắt trực tiếp video Facebook đang phát hoặc tải file .MP4/.MP3 để soi từng nốt Tay Trái, Tay Phải rải, Nốt Hát và Lời bài hát'
-                  : 'Capture live Facebook/YouTube tab audio or upload .MP4/.MP3 to inspect Left Hand, Right Hand arpeggio notes, and synced lyrics'}
+                  ? 'Nghe trọn vẹn cả bài dài (3–15+ phút) từ Tab Facebook/YouTube hoặc tải file Video .MP4 dài bất kỳ — Bắt nốt trực tiếp theo thời gian thực!'
+                  : 'Listen to full-length songs (unlimited minutes) from Facebook/YouTube tabs or full .MP4 videos with real-time 3-layer note radar!'}
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => {
-              pianoAudioEngine.stopPlayback();
-              onClose();
-            }}
+            onClick={handleCloseModal}
             className="p-2 rounded-xl text-[#94A3B8] hover:text-white hover:bg-white/10 transition"
           >
             <X className="w-5 h-5" />
@@ -500,47 +545,51 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
           {/* 4-Way Input Method Segmented Control */}
           <div className="grid grid-cols-2 md:grid-cols-4 bg-[#15192C]/90 p-1.5 rounded-2xl border border-white/10 gap-1.5">
             <button
+              disabled={isCapturingLive}
               onClick={() => setActiveTab('tab-capture')}
               className={`py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'tab-capture'
                   ? 'bg-gradient-to-r from-[#38BDF8] to-[#2563EB] text-white font-extrabold shadow-[0_0_15px_rgba(56,189,248,0.4)]'
-                  : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  : 'text-[#94A3B8] hover:text-[#F8FAFC] disabled:opacity-40'
               }`}
             >
               <MonitorPlay className="w-4 h-4 shrink-0" />
-              <span>{lang === 'vi' ? '📺 Bắt Tab Facebook / YT' : '📺 Capture FB/YT Tab'}</span>
+              <span>{lang === 'vi' ? '📺 Bắt Tab FB / YT (Cả Bài)' : '📺 Live FB/YT Tab (Full)'}</span>
             </button>
 
             <button
+              disabled={isCapturingLive}
               onClick={() => setActiveTab('upload')}
               className={`py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'upload'
                   ? 'bg-gradient-to-r from-[#34D399] to-[#059669] text-black font-extrabold shadow-[0_0_15px_rgba(52,211,153,0.4)]'
-                  : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  : 'text-[#94A3B8] hover:text-[#F8FAFC] disabled:opacity-40'
               }`}
             >
               <Upload className="w-4 h-4 shrink-0" />
-              <span>{lang === 'vi' ? '🎬 Tải Video .MP4 / .MP3' : '🎬 Upload Video / Audio'}</span>
+              <span>{lang === 'vi' ? '🎬 Tải Video Dài (.MP4/.MP3)' : '🎬 Upload Long .MP4/.MP3'}</span>
             </button>
 
             <button
+              disabled={isCapturingLive}
               onClick={() => setActiveTab('mic')}
               className={`py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'mic'
                   ? 'bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] text-white font-extrabold shadow-[0_0_15px_rgba(167,139,250,0.4)]'
-                  : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  : 'text-[#94A3B8] hover:text-[#F8FAFC] disabled:opacity-40'
               }`}
             >
               <Mic className="w-4 h-4 shrink-0" />
-              <span>{lang === 'vi' ? '🎙️ Thu Âm Giọng / Đàn' : '🎙️ Live Mic Record'}</span>
+              <span>{lang === 'vi' ? '🎙️ Thu Mic (Không Giới Hạn)' : '🎙️ Unlimited Mic'}</span>
             </button>
 
             <button
+              disabled={isCapturingLive}
               onClick={() => setActiveTab('demo')}
               className={`py-2 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
                 activeTab === 'demo'
                   ? 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-black font-extrabold shadow-[0_0_15px_rgba(245,158,11,0.4)]'
-                  : 'text-[#94A3B8] hover:text-[#F8FAFC]'
+                  : 'text-[#94A3B8] hover:text-[#F8FAFC] disabled:opacity-40'
               }`}
             >
               <Music className="w-4 h-4 shrink-0" />
@@ -556,62 +605,110 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
             </div>
           )}
 
-          {/* TAB 1: CAPTURE LIVE FACEBOOK / YOUTUBE BROWSER TAB */}
+          {/* TAB 1: CONTINUOUS UNLIMITED FACEBOOK / YOUTUBE TAB CAPTURE */}
           {activeTab === 'tab-capture' && (
             <div className="p-5 rounded-2xl bg-[#1C203B]/70 border border-[#38BDF8]/30 space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1.5 max-w-xl">
                   <div className="flex items-center gap-2">
                     <span className="px-2 py-0.5 rounded-md bg-[#38BDF8]/20 text-[#38BDF8] font-mono text-[10px] font-bold border border-[#38BDF8]/40">
-                      LIVE DIGITAL STREAM
+                      UNLIMITED FULL-SONG STREAM
                     </span>
                     <h3 className="text-sm md:text-base font-bold text-[#F8FAFC]">
                       {lang === 'vi'
-                        ? 'Nghe Trực Tiếp Video Ca Sĩ Hát Từ Tab Facebook / YouTube'
-                        : 'Listen Directly to Any Facebook / YouTube Singer Video Tab'}
+                        ? 'Nghe Trọn Vẹn Cả Video Dài Trên Tab Facebook / YouTube (Không Giới Hạn Giây!)'
+                        : 'Continuous Real-Time Facebook / YouTube Tab Listener (Unlimited Duration)'}
                     </h3>
                   </div>
                   <ol className="text-xs text-[#CBD5E1] space-y-1 list-decimal list-inside">
                     <li>
                       {lang === 'vi'
-                        ? 'Mở sẵn Tab Facebook (hoặc YouTube/TikTok) có video ca sĩ đang hát trên trình duyệt.'
-                        : 'Open the Facebook/YouTube video in another browser tab and play it.'}
+                        ? 'Mở Tab Facebook/YouTube có video ca sĩ hát → Bấm nút "Bắt Đầu Nghe Tab" bên phải và tích "Also share tab audio".'
+                        : 'Open the Facebook/YouTube tab -> Click Start below and check "Also share tab audio".'}
                     </li>
                     <li>
                       {lang === 'vi'
-                        ? 'Bấm nút bên phải → Chọn Tab Facebook đó → Bắt buộc tích ô "Also share tab audio (Chia sẻ âm thanh tab)" ở góc dưới.'
-                        : 'Click the button -> Select that browser tab -> Ensure "Also share tab audio" is checked.'}
+                        ? 'Để video phát thoải mái 3 phút, 5 phút hay 15 phút tuỳ ý! Hợp âm & nốt nhạc sẽ nhảy trực tiếp từng nhịp ngay bên dưới. Khi nào nghe xong bạn mới bấm nút "⏹ Dừng & Hoàn Tất"!'
+                        : 'Let the video play as long as you want! Chords and notes appear live every 2s until you click Stop & Finalize.'}
                     </li>
                   </ol>
                 </div>
 
-                <button
-                  onClick={handleStartTabCapture}
-                  disabled={isRecording || isAnalyzing}
-                  className="pressable px-5 py-3 rounded-xl bg-gradient-to-r from-[#38BDF8] to-[#2563EB] hover:from-[#60A5FA] hover:to-[#3B82F6] text-white font-extrabold text-xs md:text-sm shadow-[0_0_20px_rgba(56,189,248,0.4)] transition disabled:opacity-50 shrink-0 flex items-center gap-2"
-                >
-                  <MonitorPlay className="w-4 h-4" />
-                  <span>
-                    {isRecording
-                      ? lang === 'vi'
-                        ? `Đang Nghe & Bóc Nốt (${captureCountdown}s)...`
-                        : `Listening to Tab (${captureCountdown}s)...`
-                      : lang === 'vi'
-                      ? '📺 Chọn Tab Facebook Để Bắt Đầu Nghe (8s)'
-                      : '📺 Select Facebook Tab & Analyze (8s)'}
-                  </span>
-                </button>
+                {!isCapturingLive ? (
+                  <button
+                    onClick={() => handleStartContinuousCapture('tab')}
+                    disabled={isAnalyzing}
+                    className="pressable px-5 py-3 rounded-xl bg-gradient-to-r from-[#38BDF8] to-[#2563EB] hover:from-[#60A5FA] hover:to-[#3B82F6] text-white font-extrabold text-xs md:text-sm shadow-[0_0_20px_rgba(56,189,248,0.4)] transition disabled:opacity-50 shrink-0 flex items-center gap-2"
+                  >
+                    <MonitorPlay className="w-4 h-4" />
+                    <span>
+                      {lang === 'vi'
+                        ? '📺 Bắt Đầu Nghe Tab Facebook (Không Giới Hạn)'
+                        : '📺 Start Unlimited Tab Capture'}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStopContinuousCapture}
+                    className="pressable px-5 py-3 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white font-extrabold text-xs md:text-sm shadow-[0_0_25px_rgba(244,63,94,0.6)] transition shrink-0 flex items-center gap-2 animate-pulse"
+                  >
+                    <Square className="w-4 h-4 fill-current" />
+                    <span>
+                      {lang === 'vi'
+                        ? `⏹ Dừng & Hoàn Tất Cả Bài (${formatClock(elapsedSeconds)})`
+                        : `⏹ Stop & Finalize (${formatClock(elapsedSeconds)})`}
+                    </span>
+                  </button>
+                )}
               </div>
 
-              {isRecording && (
-                <div className="rounded-xl overflow-hidden border border-white/15 bg-black/60 max-h-44 flex items-center justify-center">
-                  <video ref={liveTabVideoRef} muted playsInline className="max-h-40 w-auto object-contain" />
+              {isCapturingLive && (
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center p-3 rounded-xl bg-[#0C0E1A] border border-rose-500/40">
+                  <div className="md:col-span-5 rounded-lg overflow-hidden bg-black flex items-center justify-center max-h-40">
+                    <video ref={liveTabVideoRef} muted playsInline className="max-h-36 w-auto object-contain" />
+                  </div>
+                  <div className="md:col-span-7 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="flex items-center gap-1.5 font-extrabold text-rose-400">
+                        <Radio className="w-4 h-4 animate-ping" />
+                        LIVE RADAR • {formatClock(elapsedSeconds)}
+                      </span>
+                      <span className="font-mono px-2 py-0.5 rounded bg-[#F59E0B]/20 text-[#FBBF24] font-bold">
+                        Tone tạm tính: {liveRunningKey} • {liveSegments.length} ô nhịp đã bắt
+                      </span>
+                    </div>
+                    {activeSeg ? (
+                      <div className="p-2.5 rounded-xl bg-[#1C203B] border border-white/10 space-y-1">
+                        <div className="text-sm font-extrabold text-[#F8FAFC]">
+                          Hợp âm hiện tại: <span className="text-[#F59E0B]">{activeSeg.chordSymbol}</span>{' '}
+                          <span className="text-xs font-mono text-blue-300">(Bass: {activeSeg.bassNote})</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-amber-200">
+                          🎹 Nốt đang rải: {activeSeg.arpeggioSequence.join(' → ')}
+                        </div>
+                        <div className="font-mono text-[11px] text-cyan-300">
+                          🎤 Nốt ca sĩ hát: {activeSeg.vocalMelodyNotes.join(' → ')}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-[#94A3B8] italic">
+                        {lang === 'vi'
+                          ? 'Đang thu ô nhịp đầu tiên từ Tab Facebook... Hãy đảm bảo video đang phát có tiếng!'
+                          : 'Listening for the first measure... Make sure the video is playing!'}
+                      </div>
+                    )}
+                    {liveSpeechPreview && (
+                      <div className="text-[11px] text-purple-300 truncate">
+                        📝 Lời bắt trực tiếp: &ldquo;{liveSpeechPreview}&rdquo;
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           )}
 
-          {/* TAB 2: UPLOAD VIDEO (.MP4/.MOV) OR AUDIO (.MP3/.WAV) */}
+          {/* TAB 2: UPLOAD FULL-LENGTH VIDEO (.MP4/.MOV) OR AUDIO (.MP3/.WAV) */}
           {activeTab === 'upload' && (
             <div className="space-y-4">
               <div
@@ -632,99 +729,57 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                   <div className="text-sm font-bold text-[#F8FAFC]">
                     {selectedFileName ||
                       (lang === 'vi'
-                        ? 'Kéo thả hoặc Bấm để chọn Video Ca Sĩ (.MP4, .MOV, .WEBM) hoặc File Nhạc (.MP3, .WAV)'
-                        : 'Click or drag singer Video (.MP4, .MOV, .WEBM) or Audio (.MP3, .WAV)')}
+                        ? 'Kéo thả hoặc Bấm chọn Video Dài Nguyên Bài (.MP4, .MOV, .WEBM) hoặc Nhạc (.MP3, .WAV)'
+                        : 'Click or drag Full-Length Video (.MP4, .MOV, .WEBM) or Audio (.MP3, .WAV)')}
                   </div>
                   <div className="text-xs text-[#94A3B8]">
                     {lang === 'vi'
-                      ? 'Tự động tách âm thanh từ Video, phát hình ảnh quay chậm 0.5x/0.75x đồng bộ cùng phím đàn Piano'
-                      : 'Extracts audio track from video and syncs slow-motion video playback with 3-layer piano notes'}
+                      ? 'Hỗ trợ video dài nguyên bài (3–15+ phút) • Tự động bóc tách toàn bộ ô nhịp & phát chậm 0.5x/0.75x đồng bộ phím đàn'
+                      : 'Supports full-length videos (3–15+ mins) with non-blocking measure extraction and slow-motion playback'}
                   </div>
                 </div>
               </div>
-
-              {/* Synchronized Slow-Motion Video / Audio Deck */}
-              {mediaObjectUrl && (
-                <div className="p-4 rounded-2xl bg-[#15192C] border border-white/12 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[#34D399] flex items-center gap-1.5">
-                      <MonitorPlay className="w-4 h-4" />
-                      <span>
-                        {lang === 'vi'
-                          ? 'Trình Phát Video / Audio Đồng Bộ Từng Nốt Đàn'
-                          : 'Synchronized Video / Audio Note Deck'}
-                      </span>
-                    </span>
-
-                    {/* Slow-Mo Speed Controls */}
-                    <div className="flex items-center gap-1 bg-[#1C203B] p-1 rounded-xl border border-white/10 text-xs">
-                      <Gauge className="w-3.5 h-3.5 text-[#F59E0B] ml-1.5 mr-1" />
-                      {[
-                        { rate: 0.5, label: '0.5x (Soi nốt)' },
-                        { rate: 0.75, label: '0.75x (Tập)' },
-                        { rate: 1.0, label: '1.0x (Gốc)' },
-                      ].map((item) => (
-                        <button
-                          key={item.rate}
-                          onClick={() => handleChangePlaybackRate(item.rate)}
-                          className={`px-2 py-1 rounded-lg font-mono font-bold transition ${
-                            playbackRate === item.rate
-                              ? 'bg-[#F59E0B] text-black'
-                              : 'text-[#CBD5E1] hover:text-white'
-                          }`}
-                        >
-                          {item.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <video
-                    ref={videoPlayerRef}
-                    src={mediaObjectUrl}
-                    controls
-                    playsInline
-                    onTimeUpdate={handleVideoTimeUpdate}
-                    className={`w-full rounded-xl bg-black/90 border border-white/10 ${
-                      isVideoFile ? 'max-h-60 object-contain' : 'h-12'
-                    }`}
-                  />
-                </div>
-              )}
             </div>
           )}
 
-          {/* TAB 3: LIVE MICROPHONE RECORDING */}
+          {/* TAB 3: CONTINUOUS UNLIMITED MICROPHONE RECORDING */}
           {activeTab === 'mic' && (
             <div className="p-5 rounded-2xl bg-[#1C203B]/70 border border-white/10 text-center space-y-3">
               <div className="max-w-lg mx-auto space-y-1">
                 <h3 className="text-sm md:text-base font-bold text-[#F8FAFC]">
-                  {isRecording
-                    ? `${lang === 'vi' ? 'Đang nghe giọng hát & tiếng đàn...' : 'Listening...'} (${captureCountdown}s)`
+                  {isCapturingLive
+                    ? `${lang === 'vi' ? '🔴 Đang thu âm liên tục cả bài:' : '🔴 Recording Live:'} ${formatClock(elapsedSeconds)}`
                     : lang === 'vi'
-                    ? 'Hát Hoặc Mở Loa Video Trước Micro (Vừa Bắt Nốt Vừa Chép Lời)'
-                    : 'Sing or Play Audio Near Microphone (Pitch + Live Speech)'}
+                    ? 'Thu Âm Giọng Hát / Đàn Không Giới Hạn Thời Gian (Khi Nào Xong Mới Bấm Dừng)'
+                    : 'Unlimited Live Microphone Capture (Stop Whenever You Finish)'}
                 </h3>
                 <p className="text-xs text-[#CBD5E1]">
                   {lang === 'vi'
-                    ? 'Thu âm 6 giây qua Micro: Hệ thống vừa tách 3 tầng nốt nhạc, vừa bật nhận diện giọng hát Tiếng Việt/Anh.'
-                    : 'Records 6 seconds of audio while running real-time speech-to-lyrics and 3-layer pitch extraction.'}
+                    ? 'Hát, chơi đàn hoặc bật loa điện thoại video Facebook cạnh Micro dài bao nhiêu phút tùy thích — hợp âm và nốt nhạc sẽ hiện trực tiếp từng ô nhịp!'
+                    : 'Sing, play piano, or hold your phone playing a video near the mic for as many minutes as needed!'}
                 </p>
               </div>
 
-              <button
-                onClick={handleStartMic}
-                disabled={isRecording || isAnalyzing}
-                className="pressable px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] hover:from-[#C4B5FD] hover:to-[#8B5CF6] text-white font-extrabold text-xs md:text-sm shadow-[0_0_20px_rgba(167,139,250,0.4)] transition disabled:opacity-50"
-              >
-                {isRecording
-                  ? lang === 'vi'
-                    ? `Đang Thu Âm (${captureCountdown}s)...`
-                    : `Recording (${captureCountdown}s)...`
-                  : lang === 'vi'
-                  ? '🎙️ Bắt Đầu Thu Âm & Bắt Lời (6 Giây)'
-                  : '🎙️ Start Mic & Lyrics Capture (6s)'}
-              </button>
+              {!isCapturingLive ? (
+                <button
+                  onClick={() => handleStartContinuousCapture('mic')}
+                  disabled={isAnalyzing}
+                  className="pressable px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#A78BFA] to-[#7C3AED] hover:from-[#C4B5FD] hover:to-[#8B5CF6] text-white font-extrabold text-xs md:text-sm shadow-[0_0_20px_rgba(167,139,250,0.4)] transition disabled:opacity-50"
+                >
+                  {lang === 'vi'
+                    ? '🎙️ Bắt Đầu Thu Âm Cả Bài (Không Giới Hạn)'
+                    : '🎙️ Start Unlimited Mic Recording'}
+                </button>
+              ) : (
+                <button
+                  onClick={handleStopContinuousCapture}
+                  className="pressable px-6 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 text-white font-extrabold text-xs md:text-sm shadow-[0_0_20px_rgba(244,63,94,0.5)] animate-pulse"
+                >
+                  {lang === 'vi'
+                    ? `⏹ Dừng Thu & Tổng Hợp Cả Bài (${formatClock(elapsedSeconds)})`
+                    : `⏹ Stop & Finalize (${formatClock(elapsedSeconds)})`}
+                </button>
+              )}
             </div>
           )}
 
@@ -739,8 +794,8 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                 </h3>
                 <p className="text-xs text-[#CBD5E1]">
                   {lang === 'vi'
-                    ? 'Tổng hợp sóng âm 4 ô nhịp mẫu và phân tích chi tiết: Nốt Bass tay trái, Thứ tự nốt rải tay phải, Nốt giai điệu hát và Lời bài hát.'
-                    : 'Synthesize a 4-bar track and inspect Left-Hand Bass, Right-Hand Arpeggio order, Vocal Melody pitches, and Lead Sheet lyrics.'}
+                    ? 'Tổng hợp sóng âm mẫu để xem thử cách hiển thị Nốt Bass tay trái, Thứ tự nốt rải tay phải, Nốt hát và Lời bài hát.'
+                    : 'Synthesize a sample track to preview Left-Hand Bass, Right-Hand Arpeggio order, Vocal Melody pitches, and Lead Sheet lyrics.'}
                 </p>
               </div>
 
@@ -760,14 +815,62 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
             </div>
           )}
 
+          {/* Synchronized Slow-Motion Video / Captured Audio Replay Deck (Available after upload OR after Tab/Mic capture!) */}
+          {mediaObjectUrl && !isCapturingLive && (
+            <div className="p-4 rounded-2xl bg-[#15192C] border border-white/12 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-bold text-[#34D399] flex items-center gap-1.5">
+                  <MonitorPlay className="w-4 h-4" />
+                  <span>
+                    {lang === 'vi'
+                      ? `Trình Phát Lại & Tua Chậm Đồng Bộ Nốt Đàn: ${selectedFileName || ''}`
+                      : `Synchronized Slow-Mo Replay Deck: ${selectedFileName || ''}`}
+                  </span>
+                </span>
+
+                <div className="flex items-center gap-1 bg-[#1C203B] p-1 rounded-xl border border-white/10 text-xs">
+                  <Gauge className="w-3.5 h-3.5 text-[#F59E0B] ml-1.5 mr-1" />
+                  {[
+                    { rate: 0.5, label: '0.5x (Soi nốt)' },
+                    { rate: 0.75, label: '0.75x (Tập)' },
+                    { rate: 1.0, label: '1.0x (Gốc)' },
+                  ].map((item) => (
+                    <button
+                      key={item.rate}
+                      onClick={() => handleChangePlaybackRate(item.rate)}
+                      className={`px-2 py-1 rounded-lg font-mono font-bold transition ${
+                        playbackRate === item.rate
+                          ? 'bg-[#F59E0B] text-black'
+                          : 'text-[#CBD5E1] hover:text-white'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <video
+                ref={videoPlayerRef}
+                src={mediaObjectUrl}
+                controls
+                playsInline
+                onTimeUpdate={handleVideoTimeUpdate}
+                className={`w-full rounded-xl bg-black/90 border border-white/10 ${
+                  isVideoFile ? 'max-h-60 object-contain' : 'h-12'
+                }`}
+              />
+            </div>
+          )}
+
           {/* Loading Progress Bar */}
           {isAnalyzing && (
             <div className="p-4 rounded-xl bg-[#15192C] border border-white/10 space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-[#CBD5E1]">
                 <span>
                   {lang === 'vi'
-                    ? 'Đang mổ xẻ dải tần Bass (Tay trái), chuỗi nốt rải Arpeggio (Tay phải) & Giai điệu giọng hát...'
-                    : 'Extracting Left-Hand Bass, Right-Hand Arpeggio sequence, and Vocal Melody contour...'}
+                    ? 'Đang giải mã toàn bộ thời lượng bài hát: Bóc tách Bass (Tay trái), Nốt rải (Tay phải) & Giai điệu giọng hát...'
+                    : 'Analyzing full-length track: Extracting Left-Hand Bass, Right-Hand Arpeggio sequence, and Vocal Melody...'}
                 </span>
                 <span className="font-mono text-[#38BDF8]">{progressPct}%</span>
               </div>
@@ -781,9 +884,48 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
           )}
 
           {/* ================================================================= */}
-          {/* RESULTS WORKSPACE: 3-LAYER NOTE INSPECTOR + LYRICS + REHARM       */}
+          {/* LIVE STREAMING TIMELINE (Shown live while recording long songs!)  */}
           {/* ================================================================= */}
-          {analysisResult && !isAnalyzing && (
+          {isCapturingLive && liveSegments.length > 0 && (
+            <div className="p-4 rounded-2xl bg-[#15192C]/90 border border-[#38BDF8]/30 space-y-2.5">
+              <div className="flex items-center justify-between text-xs font-bold text-[#38BDF8]">
+                <span>
+                  ⚡ Tiến trình hợp âm & nốt đang bắt trực tiếp ({liveSegments.length} ô nhịp — {formatClock(elapsedSeconds)})
+                </span>
+                <span className="text-[11px] text-[#CBD5E1]">Tự động cuộn theo video đang phát</span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-44 overflow-y-auto pr-1">
+                {liveSegments.map((seg, idx) => (
+                  <button
+                    type="button"
+                    key={idx}
+                    onClick={() => setActiveSegmentIndex(idx)}
+                    className={`p-2.5 rounded-xl border text-left space-y-1 transition ${
+                      activeSegmentIndex === idx
+                        ? 'bg-[#38BDF8]/20 border-[#38BDF8]'
+                        : 'bg-[#1C203B]/60 border-white/10'
+                    }`}
+                  >
+                    <div className="text-[10px] font-mono text-[#94A3B8]">
+                      {formatClock(seg.startTime)} - {formatClock(seg.endTime)}
+                    </div>
+                    <div className="text-sm font-extrabold text-[#F8FAFC] flex justify-between">
+                      <span>{seg.chordSymbol}</span>
+                      <span className="text-[10px] font-mono text-[#FBBF24]">Bass {seg.bassNote}</span>
+                    </div>
+                    <div className="text-[10px] font-mono text-[#CBD5E1] truncate">
+                      {seg.arpeggioSequence.join('→')}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ================================================================= */}
+          {/* FINALIZED FULL-SONG WORKSPACE                                     */}
+          {/* ================================================================= */}
+          {analysisResult && !isAnalyzing && !isCapturingLive && (
             <div className="space-y-5 animate-fadeIn">
               {/* Top Metrics & Sub-View Switcher Bar */}
               <div className="p-3.5 rounded-2xl bg-[#1C203B]/90 border border-white/12 flex flex-wrap items-center justify-between gap-3">
@@ -795,11 +937,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                     {analysisResult.detectedBpm} BPM
                   </span>
                   <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-[#34D399]/20 text-[#34D399] border border-[#34D399]/40 font-mono font-bold">
-                    {analysisResult.confidence}% {lang === 'vi' ? 'Độ tin cậy' : 'Confidence'}
-                  </span>
-                  <span className="text-xs text-[#CBD5E1] font-mono ml-1">
-                    {lang === 'vi' ? 'Vòng gốc:' : 'Chords:'}{' '}
-                    <strong className="text-[#F8FAFC]">{analysisResult.rawFormula}</strong>
+                    ⏱️ {formatClock(analysisResult.duration)} ({analysisResult.segments.length} ô nhịp)
                   </span>
                 </div>
 
@@ -843,23 +981,23 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                 </div>
               </div>
 
-              {/* Synchronized Segment Selector Strip (Always visible so user can click any bar) */}
+              {/* Scrollable Full-Song Synchronized Chord Timeline (Handles 200+ segments effortlessly!) */}
               <div className="p-4 rounded-2xl bg-[#15192C]/90 border border-white/10 space-y-2.5">
                 <div className="flex items-center justify-between text-xs font-bold text-[#CBD5E1]">
                   <span className="flex items-center gap-1.5">
                     <Sliders className="w-3.5 h-3.5 text-[#38BDF8]" />
                     <span>
                       {lang === 'vi'
-                        ? 'Tiến Trình Hợp Âm Theo Thời Gian (Bấm vào từng ô nhịp để nghe & soi từng nốt đã đánh)'
-                        : 'Synchronized Chord Timeline (Click any bar to inspect & hear exact notes played)'}
+                        ? 'Tiến Trình Toàn Bộ Bài Hát (Bấm vào ô nhịp bất kỳ để tua Video & nghe từng nốt rải)'
+                        : 'Full-Song Synchronized Chord Timeline (Click any bar to seek video & hear exact notes)'}
                     </span>
                   </span>
                   <span className="text-[11px] text-[#94A3B8]">
-                    {analysisResult.segments.length} {lang === 'vi' ? 'phân đoạn ô nhịp' : 'measure segments'}
+                    Ô nhịp đang soi: #{activeSegmentIndex + 1} / {analysisResult.segments.length}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2 max-h-56 overflow-y-auto pr-1">
                   {analysisResult.segments.map((seg, idx) => {
                     const isSelected = activeSegmentIndex === idx;
                     return (
@@ -867,7 +1005,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                         type="button"
                         key={idx}
                         onClick={() => handlePlaySegmentNoteRoll(seg, idx)}
-                        className={`p-3 rounded-xl border transition text-left space-y-1.5 ${
+                        className={`p-2.5 rounded-xl border transition text-left space-y-1 ${
                           isSelected
                             ? 'bg-[#F59E0B]/20 border-[#F59E0B] shadow-[0_0_15px_rgba(245,158,11,0.35)]'
                             : 'bg-[#1C203B]/60 border-white/10 hover:border-white/25'
@@ -875,20 +1013,20 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                       >
                         <div className="flex items-center justify-between text-[10px] font-mono text-[#94A3B8]">
                           <span>
-                            {seg.startTime}s - {seg.endTime}s
+                            {formatClock(seg.startTime)}-{formatClock(seg.endTime)}
                           </span>
-                          <span className="text-[#38BDF8] font-bold">Bậc {seg.romanDegree}</span>
+                          <span className="text-[#38BDF8] font-bold">{seg.romanDegree}</span>
                         </div>
                         <div className="flex items-baseline justify-between">
-                          <span className="text-base font-extrabold text-[#F8FAFC] font-serif">
+                          <span className="text-sm font-extrabold text-[#F8FAFC] font-serif">
                             {seg.chordSymbol}
                           </span>
                           <span className="text-[10px] font-mono text-[#FBBF24]">
-                            Bass: {seg.bassNote}
+                            {seg.bassNote}
                           </span>
                         </div>
                         <div className="text-[10px] font-mono text-[#CBD5E1] truncate">
-                          Rải: {seg.arpeggioSequence.join(' → ')}
+                          {seg.arpeggioSequence.join('→')}
                         </div>
                       </button>
                     );
@@ -896,14 +1034,10 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                 </div>
               </div>
 
-              {/* ============================================================= */}
-              {/* SUB-VIEW 1: 3-LAYER NOTE-BY-NOTE INSPECTOR + VISUAL KEYBOARD  */}
-              {/* ============================================================= */}
+              {/* SUB-VIEW 1: 3-LAYER NOTE-BY-NOTE INSPECTOR + VISUAL KEYBOARD */}
               {resultSubTab === 'notes-inspector' && activeSeg && (
                 <div className="space-y-4">
-                  {/* Detailed 3-Layer Breakdown Cards for Selected Measure */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* Layer 1: Left Hand Bass */}
                     <div className="p-4 rounded-2xl bg-[#1C203B]/80 border border-blue-500/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold text-blue-400 flex items-center gap-1.5">
@@ -916,7 +1050,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                       </div>
                       <p className="text-[11px] text-[#CBD5E1]">
                         {lang === 'vi'
-                          ? 'Nốt trầm nền tảng giữ nhịp và xác định thế đảo hợp âm (bấm vào nốt để nghe):'
+                          ? 'Nốt trầm nền tảng giữ nhịp và xác định thế đảo hợp âm:'
                           : 'Foundational low register bass notes:'}
                       </p>
                       <div className="flex flex-wrap items-center gap-1.5 pt-1">
@@ -932,7 +1066,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Layer 2: Right Hand Arpeggio / Note Roll */}
                     <div className="p-4 rounded-2xl bg-[#1C203B]/80 border border-amber-500/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold text-amber-400 flex items-center gap-1.5">
@@ -973,7 +1106,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                       </div>
                     </div>
 
-                    {/* Layer 3: Singer's Vocal Melody Pitches */}
                     <div className="p-4 rounded-2xl bg-[#1C203B]/80 border border-cyan-500/30 space-y-2.5">
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-extrabold text-cyan-400 flex items-center gap-1.5">
@@ -1009,15 +1141,15 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Interactive Visual 37-Key Piano Strip (C2 to C5) */}
+                  {/* Interactive Visual 37-Key Piano Strip */}
                   <div className="p-4 rounded-2xl bg-[#0C0E1A] border border-white/12 space-y-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="font-bold text-[#F8FAFC] flex items-center gap-2">
                         <Piano className="w-4 h-4 text-[#F59E0B]" />
                         <span>
                           {lang === 'vi'
-                            ? `Bàn Phím Soi Nốt Trực Quan — Ô nhịp ${activeSegmentIndex + 1}: Hợp âm ${activeSeg.chordSymbol}`
-                            : `Visual Note Inspector Keyboard — Bar ${activeSegmentIndex + 1}: ${activeSeg.chordSymbol}`}
+                            ? `Bàn Phím Soi Nốt Trực Quan — Ô nhịp #${activeSegmentIndex + 1} (${formatClock(activeSeg.startTime)}): ${activeSeg.chordSymbol}`
+                            : `Visual Note Inspector Keyboard — Bar #${activeSegmentIndex + 1}: ${activeSeg.chordSymbol}`}
                         </span>
                       </span>
                       <div className="flex items-center gap-3 text-[11px]">
@@ -1071,26 +1203,23 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                 </div>
               )}
 
-              {/* ============================================================= */}
-              {/* SUB-VIEW 2: CHORD-OVER-LYRICS & MELODY LEAD SHEET             */}
-              {/* ============================================================= */}
+              {/* SUB-VIEW 2: CHORD-OVER-LYRICS & MELODY LEAD SHEET */}
               {resultSubTab === 'lyrics-leadsheet' && (
                 <div className="space-y-4">
-                  {/* Hybrid Lyrics Action Toolbar */}
                   <div className="p-4 rounded-2xl bg-[#1C203B]/80 border border-white/12 flex flex-wrap items-center justify-between gap-3">
                     <div className="space-y-0.5">
                       <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
                         <FileText className="w-4 h-4 text-[#A78BFA]" />
                         <span>
                           {lang === 'vi'
-                            ? 'Bản Nhạc Hợp Âm & Nốt Giai Điệu Trên Từng Chữ (Interactive Lead Sheet)'
-                            : 'Interactive Chord-over-Lyrics & Melody Note Lead Sheet'}
+                            ? 'Bản Nhạc Hợp Âm & Nốt Giai Điệu Trên Từng Chữ (Toàn Bộ Bài Hát)'
+                            : 'Full-Song Interactive Chord-over-Lyrics Lead Sheet'}
                         </span>
                       </h4>
                       <p className="text-xs text-[#CBD5E1]">
                         {lang === 'vi'
-                          ? 'Bấm vào bất kỳ hợp âm hoặc câu hát nào để nghe thế bấm & nốt giai điệu tương ứng'
-                          : 'Click any chord badge or lyric phrase to hear its exact piano voicing and vocal note'}
+                          ? 'Hỗ trợ AI nghe trọn vẹn bài dài (lên tới 6 phút) để chép lời Tiếng Việt/Anh hoặc dán lời để tự khớp hợp âm'
+                          : 'AI listens up to 6 minutes of audio to transcribe lyrics & chords, or paste lyrics for instant alignment'}
                       </p>
                     </div>
 
@@ -1114,11 +1243,11 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                         <span>
                           {isTranscribingAi
                             ? lang === 'vi'
-                              ? 'AI Đang Nghe & Chép Lời...'
-                              : 'AI Transcribing...'
+                              ? 'AI Đang Nghe Cả Bài & Chép Lời...'
+                              : 'AI Transcribing Full Song...'
                             : lang === 'vi'
-                            ? '✨ AI Nghe Nhạc & Chép Lời (Gemini Audio)'
-                            : '✨ AI Audio Lyrics Transcribe'}
+                            ? '✨ AI Nghe Cả Bài & Chép Lời (Gemini Audio)'
+                            : '✨ AI Full-Song Lyrics Transcribe'}
                         </span>
                       </button>
 
@@ -1132,12 +1261,11 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Optional Gemini API Key Input Box */}
                   {showApiKeyBox && (
                     <div className="p-4 rounded-2xl bg-[#15192C] border border-[#F59E0B]/40 space-y-2">
                       <div className="text-xs font-bold text-[#FBBF24]">
                         {lang === 'vi'
-                          ? '🔑 Nhập Google Gemini API Key (Miễn phí tại aistudio.google.com - Lưu cục bộ trên trình duyệt của bạn):'
+                          ? '🔑 Nhập Google Gemini API Key (Miễn phí tại aistudio.google.com - Lưu cục bộ trên trình duyệt):'
                           : '🔑 Enter Google Gemini API Key (Stored locally in your browser):'}
                       </div>
                       <div className="flex items-center gap-2">
@@ -1162,25 +1290,17 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Offline Smart Lyrics Paste & Auto-Align Editor */}
                   {showLyricsEditor && (
                     <div className="p-4 rounded-2xl bg-[#15192C] border border-[#38BDF8]/40 space-y-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-[#38BDF8]">
-                          {lang === 'vi'
-                            ? '📝 Dán hoặc sửa lời bài hát (Mỗi câu 1 dòng — Hệ thống sẽ tự động gắn Hợp âm & Nốt nhạc vào từng chữ):'
-                            : '📝 Paste or edit song lyrics (One phrase per line for automatic chord & melody alignment):'}
-                        </span>
-                      </div>
+                      <span className="text-xs font-bold text-[#38BDF8] block">
+                        {lang === 'vi'
+                          ? '📝 Dán lời bài hát đầy đủ tại đây (Mỗi câu 1 dòng — Hệ thống tự động chia đều & gắn Hợp âm + Nốt nhạc theo toàn bộ bài):'
+                          : '📝 Paste full song lyrics line by line for automatic chord & melody alignment:'}
+                      </span>
                       <textarea
-                        rows={4}
+                        rows={6}
                         value={customLyricsInput}
                         onChange={(e) => setCustomLyricsInput(e.target.value)}
-                        placeholder={
-                          lang === 'vi'
-                            ? 'Nhập lời bài hát tại đây...\nVí dụ:\nChiều buông nắng trên phím đàn xưa\nTừng câu hát ngân nga nhẹ rơi'
-                            : 'Paste lyrics line by line...'
-                        }
                         className="w-full rounded-xl bg-[#1C203B] border border-white/15 p-3 text-xs text-white font-sans focus:outline-none focus:border-[#38BDF8]"
                       />
                       <div className="flex justify-end gap-2">
@@ -1204,13 +1324,13 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                     </div>
                   )}
 
-                  {/* Interactive Lead Sheet Display */}
-                  <div className="p-5 rounded-2xl bg-[#15192C]/95 border border-white/12 space-y-5">
+                  <div className="p-5 rounded-2xl bg-[#15192C]/95 border border-white/12 space-y-4 max-h-96 overflow-y-auto">
                     {analysisResult.lyricLines.map((line, lIdx) => {
                       const matchingSegIdx = analysisResult.segments.findIndex(
-                        (s) => Math.abs(s.startTime - line.startTime) < 0.9
+                        (s) => Math.abs(s.startTime - line.startTime) < 1.1
                       );
-                      const segIdx = matchingSegIdx !== -1 ? matchingSegIdx : lIdx % analysisResult.segments.length;
+                      const segIdx =
+                        matchingSegIdx !== -1 ? matchingSegIdx : lIdx % analysisResult.segments.length;
                       const seg = analysisResult.segments[segIdx];
                       const isLineActive = activeSegmentIndex === segIdx;
 
@@ -1226,11 +1346,11 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                         >
                           <div className="flex items-center justify-between text-[11px] font-mono text-[#94A3B8] mb-2">
                             <span>
-                              ⏱️ {line.startTime}s – {line.endTime}s
+                              ⏱️ {formatClock(line.startTime)} – {formatClock(line.endTime)}
                             </span>
                             {seg && (
                               <span className="text-amber-300">
-                                🎹 Rải tay phải: <strong>{seg.arpeggioSequence.join(' → ')}</strong>
+                                🎹 Rải: <strong>{seg.arpeggioSequence.join(' → ')}</strong>
                               </span>
                             )}
                           </div>
@@ -1238,7 +1358,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                           <div className="flex flex-wrap items-end gap-x-3 gap-y-4 leading-relaxed">
                             {line.tokens.map((tok, tIdx) => (
                               <div key={tIdx} className="inline-flex flex-col items-start">
-                                {/* Chord & Vocal Note Header above word */}
                                 <div className="flex items-center gap-1 mb-1">
                                   {tok.chordSymbol && (
                                     <span className="px-2 py-0.5 rounded-md bg-[#F59E0B] text-black font-mono font-extrabold text-xs shadow-xs">
@@ -1251,7 +1370,6 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                                     </span>
                                   )}
                                 </div>
-                                {/* Sung lyric words */}
                                 <span className="text-sm md:text-base font-semibold text-[#F8FAFC]">
                                   {tok.text}
                                 </span>
@@ -1265,9 +1383,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                 </div>
               )}
 
-              {/* ============================================================= */}
-              {/* SUB-VIEW 3: 3 REHARMONIZED ACCOMPANIMENT OPTIONS              */}
-              {/* ============================================================= */}
+              {/* SUB-VIEW 3: 3 REHARMONIZED ACCOMPANIMENT OPTIONS */}
               {resultSubTab === 'reharm-options' && (
                 <div className="space-y-3">
                   <h4 className="text-sm font-bold text-[#F8FAFC] flex items-center gap-2">
@@ -1288,11 +1404,9 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                           className="p-4 rounded-2xl bg-[#1C203B]/80 border border-white/12 hover:border-[#38BDF8]/50 transition flex flex-col justify-between space-y-4 shadow-sm group"
                         >
                           <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30 font-bold">
-                                {opt.styleBadge}
-                              </span>
-                            </div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#38BDF8]/15 text-[#38BDF8] border border-[#38BDF8]/30 font-bold inline-block">
+                              {opt.styleBadge}
+                            </span>
 
                             <h5 className="text-sm font-bold text-[#F8FAFC] font-serif">
                               {lang === 'vi' ? opt.titleVi : opt.titleEn}
@@ -1302,7 +1416,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                               {lang === 'vi' ? opt.descriptionVi : opt.descriptionEn}
                             </p>
 
-                            <div className="p-2.5 rounded-xl bg-[#15192C] border border-white/10 text-xs font-mono font-bold text-[#FBBF24]">
+                            <div className="p-2.5 rounded-xl bg-[#15192C] border border-white/10 text-xs font-mono font-bold text-[#FBBF24] max-h-20 overflow-y-auto">
                               {opt.progressionFormula}
                             </div>
                           </div>
@@ -1352,18 +1466,22 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
               <ShieldCheck className="w-4 h-4 text-[#34D399] shrink-0" />
               <span>
                 {lang === 'vi'
-                  ? '100% On-Device Web Audio DSP: Giải mã video/âm thanh và bóc tách 3 tầng nốt diễn ra cục bộ ngay trên trình duyệt, an toàn bản quyền.'
-                  : '100% On-Device Web Audio DSP: Video decoding and 3-layer note extraction run locally in your browser.'}
+                  ? '100% On-Device Streaming DSP: Thu âm không giới hạn thời gian & bóc nốt trực tiếp trên RAM trình duyệt, không lưu trữ nhạc ra ngoài.'
+                  : '100% On-Device Streaming DSP: Unlimited duration audio analysis runs locally in browser memory.'}
               </span>
             </div>
-            {analysisResult && (
+            {analysisResult && !isCapturingLive && (
               <button
                 onClick={() =>
-                  handleApply(analysisResult.rawFormula, analysisResult.detectedKey, 'pop-ballad')
+                  handleApply(
+                    analysisResult.accompaniments[0]?.progressionFormula || analysisResult.rawFormula,
+                    analysisResult.detectedKey,
+                    'pop-ballad'
+                  )
                 }
                 className="pressable px-3.5 py-1.5 rounded-xl bg-[#F59E0B] text-black font-extrabold text-xs shrink-0 flex items-center gap-1"
               >
-                <span>{lang === 'vi' ? 'Nạp Vòng Hợp Âm Lên Đàn 88 Phím' : 'Load to 88-Key Piano'}</span>
+                <span>{lang === 'vi' ? 'Nạp Lên Đàn 88 Phím' : 'Load to 88-Key Piano'}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
