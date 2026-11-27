@@ -85,4 +85,21 @@ describe('Piano Harmony Coach UI Integration', () => {
     // Click Undo
     fireEvent.click(undoBtn);
   });
+
+  it('renders both white keys and 3D black keys (Bb2, Ab4, etc.) inside the Song Analyzer Note Inspector keyboard', async () => {
+    render(<App />);
+    const openAnalyzerBtns = screen.getAllByRole('button', { name: /Tách Nhạc/i });
+    fireEvent.click(openAnalyzerBtns[0]);
+
+    const demoTabBtn = screen.getByRole('button', { name: /Bản Demo Đủ 3 Tầng Nốt/i });
+    fireEvent.click(demoTabBtn);
+
+    const runDemoBtn = screen.getByRole('button', { name: /Thử Ngay Bản Demo/i });
+    fireEvent.click(runDemoBtn);
+
+    const bb2Key = await screen.findByTitle(/Phím đen Bb2/i);
+    const ab4Key = await screen.findByTitle(/Phím đen Ab4/i);
+    expect(bb2Key).toBeTruthy();
+    expect(ab4Key).toBeTruthy();
+  });
 });

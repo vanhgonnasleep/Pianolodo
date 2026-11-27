@@ -53,7 +53,7 @@ type InputTab = 'tab-capture' | 'upload' | 'mic' | 'demo';
 type ResultSubTab = 'notes-inspector' | 'lyrics-leadsheet' | 'reharm-options';
 
 const INSPECTOR_START_MIDI = 36; // C2
-const INSPECTOR_END_MIDI = 72;   // C5
+const INSPECTOR_END_MIDI = 84;   // C6 (4 full octaves: 29 white keys + 20 black keys)
 const BLACK_KEY_OFFSETS = new Set([1, 3, 6, 8, 10]);
 
 function formatClock(totalSeconds: number): string {
@@ -494,11 +494,16 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
   const activeHighlightMidi = highlightedArpNote ? Note.midi(highlightedArpNote) : null;
 
   const whiteKeys: number[] = [];
+  const blackKeys: Array<{ midi: number; leftWhiteIndex: number }> = [];
   for (let m = INSPECTOR_START_MIDI; m <= INSPECTOR_END_MIDI; m++) {
     if (!BLACK_KEY_OFFSETS.has(m % 12)) {
       whiteKeys.push(m);
+    } else {
+      blackKeys.push({ midi: m, leftWhiteIndex: whiteKeys.length - 1 });
     }
   }
+  const whiteKeyWidthPct = 100 / whiteKeys.length;
+  const blackKeyWidthPct = whiteKeyWidthPct * 0.66;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-5 bg-black/80 backdrop-blur-md animate-fadeIn">
@@ -514,7 +519,7 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
               <Sparkles className="w-5 h-5 text-[#38BDF8]" />
             </div>
             <div>
-              <h2 className="text-base md:text-lg font-bold tracking-tight text-[#F8FAFC] flex flex-wrap items-center gap-2 font-serif">
+              <h2 className="text-base md:text-lg font-extrabold tracking-tight text-[#F8FAFC] flex flex-wrap items-center gap-2 font-sans">
                 <span>
                   {lang === 'vi'
                     ? 'Phòng Thu Bóc Tách Video Dài & Live Tab: Hợp Âm • Từng Nốt • Lời Hát'
@@ -1165,39 +1170,88 @@ export const SongChordAnalyzerModal: React.FC<SongChordAnalyzerModalProps> = ({
                       </div>
                     </div>
 
-                    <div className="relative h-28 flex select-none overflow-x-auto pb-1">
-                      {whiteKeys.map((midi) => {
-                        const noteName = midiToNoteName(midi);
-                        const isBass = activeBassMidis.has(midi);
-                        const isRight = activeRightMidis.has(midi);
-                        const isVocal = activeVocalMidis.has(midi);
-                        const isArpNow = activeHighlightMidi === midi;
+                    <div className="overflow-x-auto pb-1 select-none">
+                      <div className="relative h-36 flex min-w-[860px] w-full">
+                        {/* 1. White Keys Layer (C2 to C6) */}
+                        {whiteKeys.map((midi) => {
+                          const noteName = midiToNoteName(midi);
+                          const isBass = activeBassMidis.has(midi);
+                          const isRight = activeRightMidis.has(midi);
+                          const isVocal = activeVocalMidis.has(midi);
+                          const isArpNow = activeHighlightMidi === midi;
 
-                        let bgClass = 'bg-[#F8FAFC] hover:bg-slate-200 text-slate-800';
-                        if (isArpNow) {
-                          bgClass = 'bg-emerald-400 text-black font-extrabold shadow-[0_0_15px_#34D399]';
-                        } else if (isBass) {
-                          bgClass = 'bg-blue-500 text-white font-extrabold shadow-[0_0_12px_#3B82F6]';
-                        } else if (isRight) {
-                          bgClass = 'bg-amber-400 text-black font-extrabold shadow-[0_0_12px_#F59E0B]';
-                        }
+                          let bgClass = 'bg-[#F8FAFC] hover:bg-slate-200 text-slate-800';
+                          if (isArpNow) {
+                            bgClass = 'bg-emerald-400 text-black font-extrabold shadow-[0_0_15px_#34D399]';
+                          } else if (isBass) {
+                            bgClass = 'bg-blue-500 text-white font-extrabold shadow-[0_0_12px_#3B82F6]';
+                          } else if (isRight) {
+                            bgClass = 'bg-amber-400 text-black font-extrabold shadow-[0_0_12px_#F59E0B]';
+                          }
 
-                        return (
-                          <button
-                            key={midi}
-                            type="button"
-                            onClick={() => handlePlaySingleNote(noteName)}
-                            className={`flex-1 min-w-[28px] h-full rounded-b-lg border border-slate-400/50 flex flex-col items-center justify-end pb-1.5 text-[10px] font-mono transition relative ${bgClass} ${
-                              isVocal ? 'ring-2 ring-cyan-400 ring-inset' : ''
-                            }`}
-                          >
-                            {isVocal && (
-                              <span className="w-2 h-2 rounded-full bg-cyan-400 mb-1 shadow-[0_0_6px_#06B6D4]" />
-                            )}
-                            <span>{noteName}</span>
-                          </button>
-                        );
-                      })}
+                          return (
+                            <button
+                              key={midi}
+                              type="button"
+                              title={`Phím trắng ${noteName}`}
+                              onClick={() => handlePlaySingleNote(noteName)}
+                              className={`flex-1 h-full rounded-b-lg border border-slate-400/60 flex flex-col items-center justify-end pb-1.5 text-[10px] font-mono transition relative z-10 ${bgClass} ${
+                                isVocal ? 'ring-2 ring-cyan-400 ring-inset' : ''
+                              }`}
+                            >
+                              {isVocal && (
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 mb-1 shadow-[0_0_6px_#06B6D4]" />
+                              )}
+                              <span>{noteName}</span>
+                            </button>
+                          );
+                        })}
+
+                        {/* 2. Overlaid 3D Black Keys Layer (Db, Eb, F#, Ab, Bb across C2–C6) */}
+                        {blackKeys.map(({ midi, leftWhiteIndex }) => {
+                          const noteName = midiToNoteName(midi);
+                          const isBass = activeBassMidis.has(midi);
+                          const isRight = activeRightMidis.has(midi);
+                          const isVocal = activeVocalMidis.has(midi);
+                          const isArpNow = activeHighlightMidi === midi;
+
+                          const leftPct = (leftWhiteIndex + 1) * whiteKeyWidthPct - blackKeyWidthPct / 2;
+
+                          let blackBgClass =
+                            'bg-gradient-to-b from-[#262B42] via-[#151828] to-[#0A0C14] hover:from-[#333A58] text-slate-300/80 border border-white/20 shadow-[0_5px_10px_rgba(0,0,0,0.75)]';
+                          if (isArpNow) {
+                            blackBgClass =
+                              'bg-emerald-400 text-black font-extrabold border-white shadow-[0_0_16px_#34D399]';
+                          } else if (isBass) {
+                            blackBgClass =
+                              'bg-gradient-to-b from-blue-400 to-blue-600 text-white font-extrabold border-blue-200 shadow-[0_0_15px_#3B82F6]';
+                          } else if (isRight) {
+                            blackBgClass =
+                              'bg-gradient-to-b from-amber-300 to-amber-500 text-black font-extrabold border-amber-100 shadow-[0_0_15px_#F59E0B]';
+                          }
+
+                          return (
+                            <button
+                              key={midi}
+                              type="button"
+                              title={`Phím đen ${noteName}`}
+                              onClick={() => handlePlaySingleNote(noteName)}
+                              style={{
+                                left: `${leftPct}%`,
+                                width: `${blackKeyWidthPct}%`,
+                              }}
+                              className={`absolute top-0 h-[62%] z-20 rounded-b-md flex flex-col items-center justify-end pb-1.5 text-[9px] font-mono transition ${blackBgClass} ${
+                                isVocal ? 'ring-2 ring-cyan-300' : ''
+                              }`}
+                            >
+                              {isVocal && (
+                                <span className="w-2 h-2 rounded-full bg-cyan-300 mb-0.5 shadow-[0_0_8px_#22D3EE]" />
+                              )}
+                              <span className="leading-none tracking-tighter">{noteName}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
